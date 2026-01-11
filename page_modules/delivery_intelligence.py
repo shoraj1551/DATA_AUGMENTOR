@@ -4,6 +4,7 @@ Delivery Intelligence page - AI-assisted execution planning
 import streamlit as st
 import pandas as pd
 import json
+import altair as alt
 from components.navigation import back_to_home
 from delivery_intelligence.llm.plan_generator import generate_execution_plan
 from delivery_intelligence.storage.plans_db import PlansDB
@@ -275,7 +276,7 @@ def render():
         all_plans = db.get_all_plans()
         
         if all_plans:
-            # Stats cards
+            # 1. High-level Metrics
             col1, col2, col3, col4 = st.columns(4)
             
             with col1:
@@ -283,31 +284,97 @@ def render():
             
             with col2:
                 pending = len([p for p in all_plans if p['status'] == 'pending_approval'])
-                st.metric("Pending Approval", pending)
+                st.metric("Pending Approval", pending, delta=pending if pending > 0 else None, delta_color="off")
             
             with col3:
                 active = len([p for p in all_plans if p['status'] == 'in_progress'])
-                st.metric("Active Plans", active)
+                st.metric("Active Plans", active, delta=active if active > 0 else None)
             
             with col4:
-                completed = len([p for p in all_plans if p['status'] == 'completed'])
-                st.metric("Completed", completed)
+                # Estimate 4 hours saved per plan vs manual planning
+                hours_saved = len(all_plans) * 4
+                st.metric("Est. Time Saved", f"{hours_saved}h", help="Assuming 4h manual planning saved per plan")
             
-            # Status distribution
-            st.markdown("### Status Distribution")
-            status_counts = {}
+            st.markdown("---")
+            
+            # 2. Charts Row
+            chart_col1, chart_col2 = st.columns(2)
+            
+            with chart_col1:
+                st.markdown("### 📊 Plan Status")
+                status_counts = {}
+                for plan in all_plans:
+                    status = plan['status']
+                    status_counts[status] = status_counts.get(status, 0) + 1
+                
+                df_status = pd.DataFrame(list(status_counts.items()), columns=['Status', 'Count'])
+                
+                # Altair Donut Chart for Status
+                base = alt.Chart(df_status).encode(
+                    theta=alt.Theta("Count", stack=True)
+                )
+                pie = base.mark_arc(outerRadius=120, innerRadius=60).encode(
+                    color=alt.Color("Status", scale=alt.Scale(scheme='category20')),
+                    order=alt.Order("Count", sort="descending"),
+                    tooltip=["Status", "Count"]
+                )
+                text = base.mark_text(radius=140).encode(
+                    text="Count",
+                    order=alt.Order("Count", sort="descending"),
+                    color=alt.value("black")
+                )
+                st.altair_chart(pie + text, use_container_width=True)
+
+            with chart_col2:
+                st.markdown("### 👥 Engineer Distribution")
+                level_counts = {}
+                for plan in all_plans:
+                    lvl = plan.get('engineer_level', 'unknown')
+                    level_counts[lvl] = level_counts.get(lvl, 0) + 1
+                
+                df_levels = pd.DataFrame(list(level_counts.items()), columns=['Level', 'Count'])
+                
+                bar_chart = alt.Chart(df_levels).mark_bar().encode(
+                    x=alt.X('Level', sort=['junior', 'mid', 'senior', 'lead']),
+                    y='Count',
+                    color=alt.Color('Level', legend=None),
+                    tooltip=['Level', 'Count']
+                )
+                st.altair_chart(bar_chart, use_container_width=True)
+
+            # 3. Active Plans Progress
+            st.markdown("### 🚀 Active Plans Progress")
+            active_plans_data = []
             for plan in all_plans:
-                status = plan['status']
-                status_counts[status] = status_counts.get(status, 0) + 1
+                if plan['status'] in ['in_progress', 'pending_approval']:
+                    progress = calculate_progress(plan)
+                    active_plans_data.append({
+                        "Plan": plan['title'],
+                        "Progress": progress,
+                        "Status": plan['status']
+                    })
             
-            df_status = pd.DataFrame(list(status_counts.items()), columns=['Status', 'Count'])
-            st.bar_chart(df_status.set_index('Status'))
-            
-            # Recent activity
-            st.markdown("### Recent Plans")
-            recent_plans = sorted(all_plans, key=lambda x: x['created_at'], reverse=True)[:5]
-            
-            for plan in recent_plans:
-                st.markdown(f"- **{plan['title']}** - `{plan['status']}` - {plan['created_at'][:10]}")
+            if active_plans_data:
+                df_active = pd.DataFrame(active_plans_data)
+                
+                progress_chart = alt.Chart(df_active).mark_bar().encode(
+                    x=alt.X('Progress', scale=alt.Scale(domain=[0, 100]), title='Completion (%)'),
+                    y=alt.Y('Plan', sort='-x'),
+                    color=alt.Color('Status', scale=alt.Scale(range=['#3b82f6', '#f59e0b'])),
+                    tooltip=['Plan', 'Progress', 'Status']
+                ).properties(height=max(100, len(df_active) * 40))
+                
+                text_chart = progress_chart.mark_text(
+                    align='left',
+                    baseline='middle',
+                    dx=3
+                ).encode(
+                    text=alt.Text('Progress', format='d')
+                )
+                
+                st.altair_chart(progress_chart + text_chart, use_container_width=True)
+            else:
+                st.info("No active plans to show progress for.")
+
         else:
             st.info("No data available yet. Create your first plan to see analytics!")

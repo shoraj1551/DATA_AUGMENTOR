@@ -112,16 +112,39 @@ elif tool == "📊 DataAugmentor":
     if operation == "Generate Synthetic Data":
         st.subheader("Generate Synthetic Data")
         
+        # Initialize session state for retry
+        if 'last_synthetic_prompt' not in st.session_state:
+            st.session_state.last_synthetic_prompt = ""
+        if 'last_synthetic_rows' not in st.session_state:
+            st.session_state.last_synthetic_rows = 10
+        if 'synthetic_result' not in st.session_state:
+            st.session_state.synthetic_result = None
+        
         prompt = st.text_area("Describe the data you want:", 
+                             value=st.session_state.last_synthetic_prompt,
                              placeholder="E.g., Customer data with name, email, age, and city",
                              height=100)
-        num_rows = st.slider("Number of rows:", 1, 1000, 10)
+        num_rows = st.slider("Number of rows:", 1, 1000, st.session_state.last_synthetic_rows)
         
-        if st.button("Generate Data"):
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            generate_clicked = st.button("Generate Data", use_container_width=True)
+        
+        with col2:
+            retry_clicked = st.button("🔄 Retry", use_container_width=True, 
+                                     disabled=st.session_state.synthetic_result is None)
+        
+        if generate_clicked or retry_clicked:
             if prompt:
+                # Store for retry
+                st.session_state.last_synthetic_prompt = prompt
+                st.session_state.last_synthetic_rows = num_rows
+                
                 with st.spinner("Generating synthetic data..."):
                     try:
                         df = generate_synthetic_data(prompt, num_rows)
+                        st.session_state.synthetic_result = df
                         st.success(f"✅ Generated {len(df)} rows!")
                         st.dataframe(df)
                         
@@ -129,8 +152,16 @@ elif tool == "📊 DataAugmentor":
                         st.download_button("📥 Download CSV", csv, "synthetic_data.csv", "text/csv")
                     except Exception as e:
                         st.error(f"Error: {str(e)}")
+                        st.session_state.synthetic_result = None
             else:
                 st.warning("Please describe the data you want to generate.")
+        
+        # Show last result if exists
+        elif st.session_state.synthetic_result is not None:
+            st.success(f"✅ Last generated: {len(st.session_state.synthetic_result)} rows")
+            st.dataframe(st.session_state.synthetic_result)
+            csv = st.session_state.synthetic_result.to_csv(index=False)
+            st.download_button("📥 Download CSV", csv, "synthetic_data.csv", "text/csv")
     
     elif operation == "Augment Existing Data":
         st.subheader("Augment Existing Data")

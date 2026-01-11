@@ -132,8 +132,7 @@ elif tool == "📊 DataAugmentor":
             generate_clicked = st.button("Generate Data", use_container_width=True)
         
         with col2:
-            retry_clicked = st.button("🔄 Retry", use_container_width=True, 
-                                     disabled=st.session_state.synthetic_result is None)
+            retry_clicked = st.button("🔄 Retry (New Data)", use_container_width=True)
         
         if generate_clicked or retry_clicked:
             if prompt:
@@ -143,7 +142,14 @@ elif tool == "📊 DataAugmentor":
                 
                 with st.spinner("Generating synthetic data..."):
                     try:
-                        df = generate_synthetic_data(prompt, num_rows)
+                        # For retry, add timestamp to bypass cache and get fresh data
+                        import time
+                        if retry_clicked:
+                            actual_prompt = f"{prompt}\n\n[Variation {int(time.time())}]"
+                        else:
+                            actual_prompt = prompt
+                        
+                        df = generate_synthetic_data(actual_prompt, num_rows)
                         st.session_state.synthetic_result = df
                         st.success(f"✅ Generated {len(df)} rows!")
                         st.dataframe(df)
@@ -155,13 +161,6 @@ elif tool == "📊 DataAugmentor":
                         st.session_state.synthetic_result = None
             else:
                 st.warning("Please describe the data you want to generate.")
-        
-        # Show last result if exists
-        elif st.session_state.synthetic_result is not None:
-            st.success(f"✅ Last generated: {len(st.session_state.synthetic_result)} rows")
-            st.dataframe(st.session_state.synthetic_result)
-            csv = st.session_state.synthetic_result.to_csv(index=False)
-            st.download_button("📥 Download CSV", csv, "synthetic_data.csv", "text/csv")
     
     elif operation == "Augment Existing Data":
         st.subheader("Augment Existing Data")

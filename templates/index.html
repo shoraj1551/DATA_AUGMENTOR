@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>DataAugmentor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    {% include "partials/styles.html" %}
+</head>
+
+<body>
+    <div class="container">
+
+        <h1>DataAugmentor</h1>
+        <p class="subtitle">
+            Generate synthetic data, augment datasets, mask PII, or create edge cases using AI.
+        </p>
+
+        <label>Choose Operation</label>
+        <select id="action" onchange="onActionChange()">
+            <option value="">-- Select --</option>
+            <option value="generate_synthetic_data">Generate Synthetic Data</option>
+            <option value="augment_existing_data">Augment Existing Data</option>
+            <option value="mask_pii_data">Mask PII Data</option>
+            <option value="generate_edge_case_data">Generate Edge Case Data</option>
+        </select>
+
+        <label id="promptLabel">Describe the Data</label>
+        <textarea id="prompt" placeholder="Describe what you want to do..."></textarea>
+
+        <div id="helper" class="helper hidden"></div>
+
+        <div id="rowCountBlock" class="hidden">
+            <label>Number of Rows to Generate</label>
+            <input type="number" id="row_count" value="100" min="1" max="1000">
+        </div>
+
+        <div id="augmentRowCountBlock" class="hidden">
+            <label>Number of Rows to Add</label>
+            <input type="number" id="augment_row_count" value="10" min="1" max="100">
+        </div>
+
+        <div id="edgeCaseRowCountBlock" class="hidden">
+            <label>Number of Edge Cases to Generate</label>
+            <input type="number" id="edge_case_row_count" value="10" min="1" max="50">
+        </div>
+
+        <div id="fileBlock" class="hidden">
+            <label>Upload CSV</label>
+            <input type="file" id="file" accept=".csv" onchange="readSchema()">
+        </div>
+
+        <div id="schemaPreview" class="hidden">
+            <label>Detected Schema</label>
+            <div id="schemaText" class="helper"></div>
+        </div>
+
+        <div id="piiColumnsBlock" class="hidden">
+            <label>PII Columns - Select to EXCLUDE from Masking</label>
+            <div id="piiColumns"></div>
+        </div>
+
+        <button onclick="submitRequest()">Run</button>
+
+        <div id="progress" class="progress hidden">
+            <div class="progress-bar"></div>
+        </div>
+
+        <div id="error" class="error hidden"></div>
+
+        <div id="preview" class="hidden">
+            <h3>Preview (First 5 Rows)</h3>
+            <div id="tableContainer"></div>
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button onclick="downloadCurrentCSV()" style="background: #28a745;">Download CSV</button>
+                <button onclick="retryRequest()" style="background: #ffc107; color: #000;">Retry</button>
+            </div>
+        </div>
+
+    </div>
+
+    {% include "partials/ui.js.html" %}
+    {% include "partials/schema.js.html" %}
+    {% include "partials/submit.js.html" %}
+</body>
+
+</html>

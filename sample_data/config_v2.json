@@ -1,0 +1,24 @@
+{
+    "users": [
+        {
+            "id": 1,
+            "name": "Alice",
+            "role": "admin"
+        },
+        {
+            "id": 2,
+            "name": "Bob",
+            "role": "moderator"
+        },
+        {
+            "id": 4,
+            "name": "David",
+            "role": "user"
+        }
+    ],
+    "settings": {
+        "theme": "light",
+        "notifications": true,
+        "language": "en"
+    }
+}

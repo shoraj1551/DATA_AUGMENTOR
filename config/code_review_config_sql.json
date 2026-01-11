@@ -1,0 +1,109 @@
+{
+    "code_review_config": {
+        "version": "1.0",
+        "language": "SQL",
+        "description": "SQL-specific code review configuration",
+        "general_checks": {
+            "check_code_quality": true,
+            "check_security": true,
+            "check_performance": true,
+            "check_best_practices": true,
+            "check_documentation": true
+        },
+        "severity_levels": {
+            "enabled": [
+                "high",
+                "medium",
+                "low"
+            ],
+            "fail_on": [
+                "high"
+            ]
+        },
+        "sql_specific": {
+            "check_query_structure": true,
+            "check_join_types": true,
+            "check_subquery_usage": true,
+            "check_index_usage": true,
+            "check_table_scans": true,
+            "check_implicit_conversions": true,
+            "check_null_handling": true,
+            "check_transaction_usage": true
+        },
+        "performance_checks": {
+            "avoid_select_star": true,
+            "check_missing_indexes": true,
+            "check_cartesian_products": true,
+            "check_nested_subqueries": true,
+            "check_function_in_where": true,
+            "check_or_conditions": true,
+            "check_distinct_usage": true,
+            "check_group_by_optimization": true,
+            "check_join_order": true,
+            "avoid_cursors": true,
+            "check_temp_table_usage": true
+        },
+        "security_checks": {
+            "check_sql_injection": true,
+            "check_dynamic_sql": true,
+            "check_permissions": true,
+            "check_data_exposure": true,
+            "check_input_validation": true,
+            "avoid_exec_statements": true
+        },
+        "best_practices": {
+            "use_explicit_column_names": true,
+            "use_table_aliases": true,
+            "use_exists_over_in": true,
+            "use_cte_for_readability": true,
+            "use_proper_data_types": true,
+            "use_parameterized_queries": true,
+            "avoid_implicit_joins": true,
+            "use_appropriate_indexes": true,
+            "normalize_data_properly": true,
+            "use_transactions_appropriately": true
+        },
+        "code_quality": {
+            "max_query_length": 100,
+            "max_subquery_depth": 3,
+            "max_join_count": 5,
+            "require_query_comments": true,
+            "check_naming_conventions": true,
+            "consistent_formatting": true
+        },
+        "documentation_checks": {
+            "require_query_purpose": true,
+            "document_complex_logic": true,
+            "document_table_relationships": true,
+            "document_performance_notes": true
+        },
+        "test_generation": {
+            "generate_unit_tests": true,
+            "test_with_sample_data": true,
+            "test_edge_cases": true,
+            "test_framework_preference": "tSQLt"
+        },
+        "failure_scenarios": {
+            "test_null_values": true,
+            "test_empty_results": true,
+            "test_duplicate_data": true,
+            "test_data_type_mismatches": true,
+            "test_constraint_violations": true,
+            "test_deadlocks": true
+        },
+        "excluded_patterns": {
+            "files": [
+                "**/test_*.sql",
+                "**/*_test.sql"
+            ],
+            "directories": [
+                "backup",
+                "archive"
+            ],
+            "objects": [
+                "temp_*",
+                "tmp_*"
+            ]
+        }
+    }
+}

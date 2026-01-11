@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Application specific
+*.csv
+!sample_data/*.csv
+!sample_files/*.csv
+augmented_*.csv
+synthetic_*.csv
+masked_*.csv
+edge_case_*.csv
+
+# Logs
+*.log
+
+# Environment variables
+.env
+
+# Test files
+test_*.py
+*_test.py

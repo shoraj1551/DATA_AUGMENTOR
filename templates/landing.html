@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Tools Suite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            opacity: 0.95;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        .tool-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .tool-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+        }
+
+        .tool-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .tool-card h2 {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .tool-card p {
+            color: #666;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .tool-features {
+            list-style: none;
+            margin-bottom: 25px;
+        }
+
+        .tool-features li {
+            padding: 8px 0;
+            color: #555;
+            font-size: 0.95rem;
+        }
+
+        .tool-features li::before {
+            content: "✓ ";
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .launch-btn {
+            display: inline-block;
+            padding: 15px 35px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+        }
+
+        .launch-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: #f0f0f0;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .badge.new {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Data Tools Suite</h1>
+            <p>Powerful tools for data manipulation and analysis</p>
+        </div>
+
+        <div class="tools-grid">
+            <!-- DataAugmentor Card -->
+            <div class="tool-card" onclick="window.location.href='/data-augmentor'">
+                <div class="tool-icon">🤖</div>
+                <span class="badge">AI-Powered</span>
+                <h2>DataAugmentor</h2>
+                <p>AI-powered data manipulation tool for generating, augmenting, and masking data</p>
+                <ul class="tool-features">
+                    <li>Generate synthetic data from descriptions</li>
+                    <li>Augment existing datasets</li>
+                    <li>Automatically mask PII data</li>
+                    <li>Generate edge case test data</li>
+                </ul>
+                <button class="launch-btn">Launch DataAugmentor →</button>
+            </div>
+
+            <!-- File Comparison Card -->
+            <div class="tool-card" onclick="window.location.href='/file-comparison'">
+                <div class="tool-icon">📊</div>
+                <span class="badge new">NEW</span>
+                <h2>File Comparison</h2>
+                <p>Compare files and identify differences with detailed statistics</p>
+                <ul class="tool-features">
+                    <li>Compare CSV, TXT, and JSON files</li>
+                    <li>Find unique data in each file</li>
+                    <li>Identify common data</li>
+                    <li>View detailed statistics</li>
+                </ul>
+                <button class="launch-btn">Launch File Comparison →</button>
+            </div>
+
+            <!-- Code Review & Testing Card -->
+            <div class="tool-card" onclick="window.location.href='/code-review'">
+                <div class="tool-icon">🔍</div>
+                <span class="badge new">NEW</span>
+                <h2>Code Review & Testing</h2>
+                <p>AI-powered code analysis, test generation, and failure detection</p>
+                <ul class="tool-features">
+                    <li>Automated code review & analysis</li>
+                    <li>Generate unit & functional tests</li>
+                    <li>Create failure test scenarios</li>
+                    <li>Support 20+ programming languages</li>
+                </ul>
+                <button class="launch-btn">Launch Code Review →</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

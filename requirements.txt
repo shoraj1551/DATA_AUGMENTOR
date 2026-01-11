@@ -1,0 +1,17 @@
+﻿# DataAugmentor - Minimal Requirements
+# Core dependencies only
+
+# Web Framework
+Flask==3.1.2
+streamlit==1.29.0
+
+# Data Processing
+pandas==2.3.3
+
+# AI/LLM Integration
+openai==2.14.0
+
+# Note: The above packages will automatically install their required dependencies:
+# - Flask will install: Werkzeug, Jinja2, click, itsdangerous, blinker
+# - pandas will install: numpy, python-dateutil, pytz, tzdata
+# - openai will install: httpx, pydantic, typing-extensions, anyio, distro, sniffio, etc.

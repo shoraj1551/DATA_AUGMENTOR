@@ -1,0 +1,142 @@
+<script>
+    // Global variable to store the current CSV data
+    let currentCSV = null;
+
+    function submitRequest() {
+        const action = get("action");
+        const prompt = get("prompt");
+
+        hide("error");
+        hide("preview");
+        show("progress");
+
+        if (!action) {
+            showError("Please select an operation.");
+            hide("progress");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("action", action);
+        formData.append("prompt", prompt);
+
+        // Row count for generate operation
+        const rowInput = document.getElementById("row_count");
+        if (rowInput && !rowInput.closest('.hidden')) {
+            formData.append("row_count", rowInput.value);
+        }
+
+        // Row count for augment operation
+        const augmentRowInput = document.getElementById("augment_row_count");
+        if (augmentRowInput && !augmentRowInput.closest('.hidden')) {
+            formData.append("augment_row_count", augmentRowInput.value);
+        }
+
+        // Row count for edge case operation
+        const edgeCaseRowInput = document.getElementById("edge_case_row_count");
+        if (edgeCaseRowInput && !edgeCaseRowInput.closest('.hidden')) {
+            formData.append("edge_case_row_count", edgeCaseRowInput.value);
+        }
+
+        const fileInput = document.getElementById("file");
+        if (fileInput && fileInput.files.length > 0) {
+            formData.append("file", fileInput.files[0]);
+        } else if (action !== "generate_synthetic_data") {
+            showError("CSV file is required for this action.");
+            hide("progress");
+            return;
+        }
+
+        // PII exclude columns
+        if (action === "mask_pii_data") {
+            const checkboxes = document.querySelectorAll("#piiColumns input:checked");
+            const exclude = Array.from(checkboxes).map(c => c.value);
+            formData.append("exclude_columns", JSON.stringify(exclude));
+        }
+
+        fetch("/process", { method: "POST", body: formData })
+            .then(res => {
+                if (!res.ok) {
+                    return res.text().then(t => { throw new Error(t); });
+                }
+                return res.text();
+            })
+            .then(csv => {
+                hide("progress");
+
+                if (!csv || !csv.includes(",")) {
+                    showError("Invalid CSV returned from server.");
+                    return;
+                }
+
+                // Store CSV data globally
+                currentCSV = csv;
+
+                // Show preview without auto-downloading
+                renderPreview(csv);
+            })
+            .catch(err => {
+                hide("progress");
+                showError(err.message || "Processing failed.");
+            });
+    }
+
+    function renderPreview(csv) {
+        const rows = csv.trim().split("\n").slice(0, 6).map(r => r.split(","));
+        if (rows.length < 2) return;
+
+        let html = "<table>";
+        rows.forEach((r, i) => {
+            html += "<tr>" +
+                r.map(c => i === 0 ? `<th>${c}</th>` : `<td>${c}</td>`).join("") +
+                "</tr>";
+        });
+        html += "</table>";
+
+        document.getElementById("tableContainer").innerHTML = html;
+        show("preview");
+    }
+
+    function downloadCurrentCSV() {
+        if (!currentCSV) {
+            showError("No data available to download.");
+            return;
+        }
+        downloadCSV(currentCSV);
+    }
+
+    function retryRequest() {
+        // Clear current data and resubmit
+        currentCSV = null;
+        hide("preview");
+        submitRequest();
+    }
+
+    function downloadCSV(csv) {
+        const blob = new Blob([csv], { type: "text/csv" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "output.csv";
+        a.click();
+    }
+
+
+    function get(id) {
+        const el = document.getElementById(id);
+        return el ? el.value : "";
+    }
+
+    function show(id) {
+        document.getElementById(id).classList.remove("hidden");
+    }
+
+    function hide(id) {
+        document.getElementById(id).classList.add("hidden");
+    }
+
+    function showError(msg) {
+        const e = document.getElementById("error");
+        e.innerText = msg;
+        e.classList.remove("hidden");
+    }
+</script>

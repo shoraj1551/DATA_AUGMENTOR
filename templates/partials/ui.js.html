@@ -1,0 +1,52 @@
+<script>
+    function onActionChange() {
+        const action = document.getElementById("action").value;
+
+        toggle("rowCountBlock", action === "generate_synthetic_data");
+        toggle("augmentRowCountBlock", action === "augment_existing_data");
+        toggle("edgeCaseRowCountBlock", action === "generate_edge_case_data");
+        toggle("fileBlock", action !== "generate_synthetic_data");
+        toggle("piiColumnsBlock", action === "mask_pii_data");
+
+        // Update prompt label based on requirement
+        const promptLabel = document.getElementById("promptLabel");
+        const promptField = document.getElementById("prompt");
+
+        if (action === "generate_synthetic_data") {
+            promptLabel.innerHTML = 'Describe the Data <span style="color: #dc3545; font-weight: bold;">*</span>';
+            promptField.placeholder = "Example: Generate 500 employee records with name, age, department, salary...";
+            promptField.required = true;
+        } else if (action === "augment_existing_data" || action === "generate_edge_case_data") {
+            promptLabel.innerHTML = 'Describe the Data <span style="color: #6c757d; font-style: italic;">(Optional)</span>';
+            promptField.placeholder = "Optional: Add any specific instructions...";
+            promptField.required = false;
+        } else if (action === "mask_pii_data") {
+            promptLabel.innerHTML = 'Describe the Data <span style="color: #6c757d; font-style: italic;">(Optional)</span>';
+            promptField.placeholder = "Optional: Specify any additional masking requirements...";
+            promptField.required = false;
+        } else {
+            promptLabel.innerHTML = 'Describe the Data';
+            promptField.placeholder = "Describe what you want to do...";
+            promptField.required = false;
+        }
+
+        const help = {
+            generate_synthetic_data:
+                "💡 Describe the type of data you want to generate. Be specific about columns and data types.",
+            augment_existing_data:
+                "💡 Upload your CSV file. The system will automatically add similar rows.",
+            mask_pii_data:
+                "💡 Upload your CSV file. PII columns will be automatically detected and masked.",
+            generate_edge_case_data:
+                "💡 Upload your CSV file. Edge cases will be generated based on your data schema."
+        };
+
+        const helper = document.getElementById("helper");
+        helper.innerText = help[action] || "";
+        helper.classList.toggle("hidden", !help[action]);
+    }
+
+    function toggle(id, show) {
+        document.getElementById(id).classList.toggle("hidden", !show);
+    }
+</script>

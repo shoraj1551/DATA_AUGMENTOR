@@ -1,0 +1,52 @@
+<script>
+    function readSchema() {
+        const file = document.getElementById("file").files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = e => {
+            const columns = e.target.result.split("\n")[0].split(",").map(c => c.trim());
+
+            document.getElementById("schemaPreview").classList.remove("hidden");
+            document.getElementById("schemaText").innerText = columns.join(", ");
+
+            // Identify potential PII columns
+            const piiColumns = identifyPIIColumns(columns);
+
+            const container = document.getElementById("piiColumns");
+            container.innerHTML = "";
+
+            if (piiColumns.length === 0) {
+                container.innerHTML = '<p style="color: #28a745; font-style: italic;">✓ No PII columns detected in this dataset</p>';
+            } else {
+                piiColumns.forEach(col => {
+                    container.innerHTML += `
+                    <label>
+                        <input type="checkbox" value="${col}"> ${col}
+                    </label>
+                `;
+                });
+            }
+        };
+
+        reader.readAsText(file);
+    }
+
+    function identifyPIIColumns(columns) {
+        // Common PII column name patterns
+        const piiPatterns = [
+            /name/i, /email/i, /phone/i, /mobile/i, /tel/i,
+            /address/i, /street/i, /city/i, /zip/i, /postal/i,
+            /ssn/i, /social/i, /passport/i, /license/i, /id$/i,
+            /username/i, /user/i, /login/i,
+            /ip/i, /ipaddress/i,
+            /card/i, /credit/i, /account/i,
+            /dob/i, /birth/i, /age/i,
+            /salary/i, /income/i, /wage/i
+        ];
+
+        return columns.filter(col => {
+            return piiPatterns.some(pattern => pattern.test(col));
+        });
+    }
+</script>

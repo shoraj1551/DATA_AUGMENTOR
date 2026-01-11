@@ -1,0 +1,41 @@
+{
+    "code_review_config": {
+        "version": "1.0",
+        "language": "Spark SQL",
+        "description": "Spark SQL-specific code review configuration",
+        "general_checks": {
+            "check_code_quality": true,
+            "check_security": true,
+            "check_performance": true,
+            "check_best_practices": true
+        },
+        "spark_sql_specific": {
+            "check_partition_pruning": true,
+            "check_broadcast_hints": true,
+            "check_shuffle_partitions": true,
+            "check_adaptive_query_execution": true,
+            "check_dynamic_partition_pruning": true,
+            "check_cost_based_optimization": true
+        },
+        "performance_checks": {
+            "avoid_select_star": true,
+            "check_partition_columns": true,
+            "check_file_format": true,
+            "check_compression": true,
+            "check_bucketing": true,
+            "optimize_joins": true,
+            "check_skew_hints": true
+        },
+        "best_practices": {
+            "use_parquet_format": true,
+            "partition_large_tables": true,
+            "use_broadcast_for_small_tables": true,
+            "cache_frequently_used_tables": true,
+            "use_column_pruning": true
+        },
+        "test_generation": {
+            "generate_unit_tests": true,
+            "test_framework_preference": "pytest"
+        }
+    }
+}

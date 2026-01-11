@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Review & Testing Engine</title>
+    {% include "partials/styles.html" %}
+    <style>
+        .upload-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            border: 2px dashed #ccc;
+            margin-bottom: 30px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .option-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .option-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .option-card input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        .option-card label {
+            cursor: pointer;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .option-card p {
+            margin: 10px 0 0 28px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .results-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .code-block {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .issue-card {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+
+        .issue-card.high {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+
+        .issue-card.medium {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+
+        .issue-card.low {
+            background: #d1ecf1;
+            border-left-color: #17a2b8;
+        }
+
+        .issue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .severity-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .severity-badge.high {
+            background: #dc3545;
+            color: white;
+        }
+
+        .severity-badge.medium {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .severity-badge.low {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .back-btn:hover {
+            background: #5a6268;
+        }
+
+        .language-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            background: #667eea;
+            color: white;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a href="/" class="back-btn">← Back to Tools</a>
+
+        <h1>🔍 Code Review & Testing Engine</h1>
+        <p class="subtitle">AI-powered code analysis and test generation for multiple languages</p>
+
+        <div class="upload-section" style="background: #fff3e0; border-color: #ff9800;">
+            <h3>1️⃣ Select Programming Language</h3>
+            <select id="languageSelect"
+                style="width: 100%; padding: 12px; font-size: 1rem; border-radius: 5px; border: 2px solid #ccc;">
+                <option value="">-- Auto-detect from file --</option>
+
+                <!-- Main Languages (Large Font) -->
+                <option value="python" style="font-size: 1.1rem; font-weight: bold;">🐍 Python</option>
+                <option value="pyspark" style="font-size: 1.1rem; font-weight: bold;">⚡ PySpark</option>
+                <option value="sql" style="font-size: 1.1rem; font-weight: bold;">🗄️ SQL</option>
+                <option value="sparksql" style="font-size: 1.1rem; font-weight: bold;">⚡ Spark SQL</option>
+
+                <option disabled>─────────────────────────</option>
+                <option disabled style="font-size: 0.85rem; color: #999;">Other Languages (Generic Config)</option>
+
+                <!-- Other Languages (Small Font) -->
+                <optgroup label="JavaScript/TypeScript" style="font-size: 0.85rem;">
+                    <option value="javascript" style="font-size: 0.85rem;">JavaScript</option>
+                    <option value="typescript" style="font-size: 0.85rem;">TypeScript</option>
+                </optgroup>
+                <optgroup label="JVM Languages" style="font-size: 0.85rem;">
+                    <option value="java" style="font-size: 0.85rem;">Java</option>
+                    <option value="scala" style="font-size: 0.85rem;">Scala</option>
+                    <option value="kotlin" style="font-size: 0.85rem;">Kotlin</option>
+                </optgroup>
+                <optgroup label=".NET Languages" style="font-size: 0.85rem;">
+                    <option value="csharp" style="font-size: 0.85rem;">C#</option>
+                    <option value="vb" style="font-size: 0.85rem;">VB.NET</option>
+                    <option value="fsharp" style="font-size: 0.85rem;">F#</option>
+                </optgroup>
+                <optgroup label="Compiled Languages" style="font-size: 0.85rem;">
+                    <option value="go" style="font-size: 0.85rem;">Go</option>
+                    <option value="rust" style="font-size: 0.85rem;">Rust</option>
+                    <option value="cpp" style="font-size: 0.85rem;">C++</option>
+                    <option value="c" style="font-size: 0.85rem;">C</option>
+                </optgroup>
+                <optgroup label="Scripting Languages" style="font-size: 0.85rem;">
+                    <option value="ruby" style="font-size: 0.85rem;">Ruby</option>
+                    <option value="php" style="font-size: 0.85rem;">PHP</option>
+                    <option value="perl" style="font-size: 0.85rem;">Perl</option>
+                    <option value="lua" style="font-size: 0.85rem;">Lua</option>
+                    <option value="bash" style="font-size: 0.85rem;">Bash</option>
+                </optgroup>
+                <optgroup label="Data & Query" style="font-size: 0.85rem;">
+                    <option value="hive" style="font-size: 0.85rem;">Hive</option>
+                    <option value="r" style="font-size: 0.85rem;">R</option>
+                </optgroup>
+                <optgroup label="Other" style="font-size: 0.85rem;">
+                    <option value="swift" style="font-size: 0.85rem;">Swift</option>
+                    <option value="dart" style="font-size: 0.85rem;">Dart</option>
+                    <option value="groovy" style="font-size: 0.85rem;">Groovy</option>
+                </optgroup>
+            </select>
+            <p class="helper" style="margin-top: 10px;">
+                <strong>Python, PySpark, SQL, Spark SQL</strong> have detailed configs.
+                Other languages use generic config.
+            </p>
+        </div>
+
+        <div class="upload-section">
+            <h3>2️⃣ Upload Code File</h3>
+            <input type="file" id="codeFile"
+                accept=".py,.ipynb,.js,.ts,.jsx,.tsx,.java,.scala,.kt,.cs,.vb,.fs,.go,.rs,.cpp,.c,.rb,.php,.pl,.lua,.sh,.sql,.hql,.r,.html,.css,.swift,.dart,.groovy">
+            <div id="fileInfo" class="helper hidden"></div>
+        </div>
+
+        <div class="upload-section" style="background: #e7f3ff; border-color: #667eea;">
+            <h3>3️⃣ Code Review Configuration (Optional)</h3>
+            <p style="margin-bottom: 15px; color: #666;">Download language-specific config or upload your own</p>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <button onclick="downloadConfig()" style="background: #17a2b8; padding: 10px 20px;">
+                    Download Config for Selected Language
+                </button>
+                <label for="configFile"
+                    style="background: #28a745; color: white; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                    Upload Custom Config
+                    <input type="file" id="configFile" accept=".json" style="display: none;">
+                </label>
+            </div>
+            <div id="configInfo" class="helper hidden"></div>
+        </div>
+
+        <div class="options-grid">
+            <div class="option-card">
+                <input type="checkbox" id="reviewCode" checked onclick="event.stopPropagation()">
+                <label for="reviewCode" onclick="document.getElementById('reviewCode').click()">Code Review</label>
+                <p>Analyze code quality, security, and best practices</p>
+            </div>
+
+            <div class="option-card">
+                <input type="checkbox" id="generateUnitTests" checked onclick="event.stopPropagation()">
+                <label for="generateUnitTests" onclick="document.getElementById('generateUnitTests').click()">Generate
+                    Unit Tests</label>
+                <p>Create comprehensive unit tests for functions</p>
+            </div>
+
+            <div class="option-card">
+                <input type="checkbox" id="generateFunctionalTests" onclick="event.stopPropagation()">
+                <label for="generateFunctionalTests"
+                    onclick="document.getElementById('generateFunctionalTests').click()">Generate Functional
+                    Tests</label>
+                <p>Create integration and end-to-end tests</p>
+            </div>
+
+            <div class="option-card">
+                <input type="checkbox" id="generateFailureData" checked onclick="event.stopPropagation()">
+                <label for="generateFailureData"
+                    onclick="document.getElementById('generateFailureData').click()">Generate Failure Scenarios</label>
+                <p>Create edge cases and malicious inputs</p>
+            </div>
+        </div>
+
+        <button onclick="analyzeCode()" style="width: 100%; padding: 15px; font-size: 1.1rem;">Analyze Code</button>
+
+        <div id="progress" class="progress hidden">
+            <div class="progress-bar"></div>
+        </div>
+
+        <div id="error" class="error hidden"></div>
+
+        <div id="results" class="results-section hidden">
+            <div class="results-tabs">
+                <button class="tab active" onclick="switchTab('review')">Code Review</button>
+                <button class="tab" onclick="switchTab('unit-tests')">Unit Tests</button>
+                <button class="tab" onclick="switchTab('functional-tests')">Functional Tests</button>
+                <button class="tab" onclick="switchTab('failures')">Failure Scenarios</button>
+            </div>
+
+            <div id="review-content" class="tab-content active">
+                <h3>Code Review Findings</h3>
+                <div id="reviewResults"></div>
+            </div>
+
+            <div id="unit-tests-content" class="tab-content">
+                <h3>Generated Unit Tests</h3>
+                <div id="unitTestsResults" class="code-block"></div>
+                <button onclick="downloadTests('unit')" style="margin-top: 15px;">Download Tests</button>
+            </div>
+
+            <div id="functional-tests-content" class="tab-content">
+                <h3>Generated Functional Tests</h3>
+                <div id="functionalTestsResults" class="code-block"></div>
+                <button onclick="downloadTests('functional')" style="margin-top: 15px;">Download Tests</button>
+            </div>
+
+            <div id="failures-content" class="tab-content">
+                <h3>Failure Test Scenarios</h3>
+                <div id="failuresResults"></div>
+            </div>
+
+            <script>
+                let currentLanguage = '';
+                let analysisResults = {};
+                let customConfig = null;
+
+                function downloadConfig() {
+                    const language = document.getElementById('languageSelect').value || 'python';
+                    fetch(`/download-review-config?language=${language}`)
+                        .then(res => res.blob())
+                        .then(blob => {
+                            const a = document.createElement('a');
+                            a.href = URL.createObjectURL(blob);
+                            a.download = `code_review_config_${language}.json`;
+                            a.click();
+                        })
+                        .catch(err => {
+                            showError('Failed to download config: ' + err.message);
+                        });
+                }
+
+                document.getElementById('configFile').addEventListener('change', function (e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function (event) {
+                            try {
+                                customConfig = JSON.parse(event.target.result);
+                                const info = document.getElementById('configInfo');
+                                info.innerHTML = `✓ Custom config loaded: ${file.name}`;
+                                info.style.color = '#28a745';
+                                info.classList.remove('hidden');
+                            } catch (err) {
+                                showError('Invalid JSON config file');
+                            }
+                        };
+                        reader.readAsText(file);
+                    }
+                });
+
+                function toggleCheckbox(id) {
+                    const checkbox = document.getElementById(id);
+                    checkbox.checked = !checkbox.checked;
+                }
+
+                function analyzeCode() {
+                    const file = document.getElementById('codeFile').files[0];
+
+                    document.getElementById('error').classList.add('hidden');
+                    document.getElementById('results').classList.add('hidden');
+
+                    if (!file) {
+                        showError('Please select a code file');
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('selected_language', document.getElementById('languageSelect').value);
+                    formData.append('review_code', document.getElementById('reviewCode').checked);
+                    formData.append('generate_unit_tests', document.getElementById('generateUnitTests').checked);
+                    formData.append('generate_functional_tests', document.getElementById('generateFunctionalTests').checked);
+                    formData.append('generate_failure_data', document.getElementById('generateFailureData').checked);
+
+                    // Add custom config if uploaded
+                    if (customConfig) {
+                        formData.append('custom_config', JSON.stringify(customConfig));
+                    }
+
+                    document.getElementById('progress').classList.remove('hidden');
+
+                    fetch('/analyze-code', { method: 'POST', body: formData })
+                        .then(res => res.json())
+                        .then(data => {
+                            document.getElementById('progress').classList.add('hidden');
+
+                            if (data.error) {
+                                showError(data.error);
+                                return;
+                            }
+
+                            analysisResults = data;
+                            currentLanguage = data.language;
+                            displayResults(data);
+                        })
+                        .catch(err => {
+                            document.getElementById('progress').classList.add('hidden');
+                            showError('Analysis failed: ' + err.message);
+                        });
+                }
+
+                function displayResults(data) {
+                    document.getElementById('results').classList.remove('hidden');
+
+                    // Code Review
+                    if (data.review) {
+                        displayReview(data.review);
+                        document.querySelector('.tab[onclick*="review"]').style.display = 'block';
+                    } else {
+                        document.getElementById('reviewResults').innerHTML = '<p style="color: #999;">Code review was not requested</p>';
+                        document.querySelector('.tab[onclick*="review"]').style.display = 'none';
+                    }
+
+                    // Unit Tests
+                    if (data.unit_tests) {
+                        document.getElementById('unitTestsResults').textContent = data.unit_tests;
+                        document.querySelector('.tab[onclick*="unit-tests"]').style.display = 'block';
+                    } else {
+                        document.getElementById('unitTestsResults').textContent = 'Unit test generation was not requested';
+                        document.querySelector('.tab[onclick*="unit-tests"]').style.display = 'none';
+                    }
+
+                    // Functional Tests
+                    if (data.functional_tests) {
+                        document.getElementById('functionalTestsResults').textContent = data.functional_tests;
+                        document.querySelector('.tab[onclick*="functional-tests"]').style.display = 'block';
+                    } else {
+                        document.getElementById('functionalTestsResults').textContent = 'Functional test generation was not requested';
+                        document.querySelector('.tab[onclick*="functional-tests"]').style.display = 'none';
+                    }
+
+                    // Failure Scenarios
+                    if (data.failure_scenarios) {
+                        displayFailureScenarios(data.failure_scenarios);
+                        document.querySelector('.tab[onclick*="failures"]').style.display = 'block';
+                    } else {
+                        document.getElementById('failuresResults').innerHTML = '<p style="color: #999;">Failure scenario generation was not requested</p>';
+                        document.querySelector('.tab[onclick*="failures"]').style.display = 'none';
+                    }
+
+                    // Auto-select first visible tab
+                    const firstVisibleTab = document.querySelector('.tab[style*="display: block"]');
+                    if (firstVisibleTab) {
+                        firstVisibleTab.click();
+                    }
+                }
+
+
+                function displayReview(review) {
+                    const container = document.getElementById('reviewResults');
+                    let html = '';
+
+                    if (review.issues && review.issues.length > 0) {
+                        review.issues.forEach(issue => {
+                            html += `
+                <div class="issue-card ${issue.severity}">
+                    <div class="issue-header">
+                        <strong>Line ${issue.line || 'N/A'}: ${issue.type}</strong>
+                        <span class="severity-badge ${issue.severity}">${issue.severity.toUpperCase()}</span>
+                    </div>
+                    <p><strong>Issue:</strong> ${issue.message}</p>
+                    <p><strong>Suggestion:</strong> ${issue.suggestion}</p>
+                </div>
+            `;
+                        });
+                    } else {
+                        html = '<p style="color: #28a745;">✓ No major issues found!</p>';
+                    }
+
+                    container.innerHTML = html;
+                }
+
+                function displayFailureScenarios(scenarios) {
+                    const container = document.getElementById('failuresResults');
+                    let html = '';
+
+                    scenarios.forEach(scenario => {
+                        html += `
+            <div class="issue-card low">
+                <h4>${scenario.function || 'General'}</h4>
+                <p><strong>Input:</strong> <code>${scenario.input}</code></p>
+                <p><strong>Reason:</strong> ${scenario.reason}</p>
+                <p><strong>Expected:</strong> ${scenario.expected}</p>
+            </div>
+        `;
+                    });
+
+                    container.innerHTML = html;
+                }
+
+                function switchTab(tabName) {
+                    // Hide all tabs
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                    // Show selected tab
+                    event.target.classList.add('active');
+                    document.getElementById(tabName + '-content').classList.add('active');
+                }
+
+                function downloadTests(type) {
+                    const content = type === 'unit' ?
+                        analysisResults.unit_tests :
+                        analysisResults.functional_tests;
+
+                    const blob = new Blob([content], { type: 'text/plain' });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `${type}_tests_${currentLanguage}.${getFileExtension(currentLanguage)}`;
+                    a.click();
+                }
+
+                function getFileExtension(language) {
+                    const extensions = {
+                        'python': 'py',
+                        'javascript': 'js',
+                        'typescript': 'ts',
+                        'java': 'java',
+                        'scala': 'scala',
+                        'kotlin': 'kt',
+                        'csharp': 'cs',
+                        'vb': 'vb',
+                        'fsharp': 'fs',
+                        'go': 'go',
+                        'rust': 'rs',
+                        'cpp': 'cpp',
+                        'c': 'c',
+                        'ruby': 'rb',
+                        'php': 'php',
+                        'perl': 'pl',
+                        'lua': 'lua',
+                        'bash': 'sh',
+                        'sql': 'sql',
+                        'hive': 'hql',
+                        'r': 'r',
+                        'swift': 'swift',
+                        'dart': 'dart',
+                        'groovy': 'groovy'
+                    };
+                    return extensions[language.toLowerCase()] || 'txt';
+                }
+
+                function showError(msg) {
+                    const errorDiv = document.getElementById('error');
+                    errorDiv.textContent = msg;
+                    errorDiv.classList.remove('hidden');
+                }
+
+                // File info display
+                document.getElementById('codeFile').addEventListener('change', function (e) {
+                    const info = document.getElementById('fileInfo');
+                    if (e.target.files[0]) {
+                        const ext = e.target.files[0].name.split('.').pop();
+                        info.innerHTML = `Selected: ${e.target.files[0].name} <span class="language-badge">${ext.toUpperCase()}</span>`;
+                        info.classList.remove('hidden');
+                    }
+                });
+            </script>
+</body>
+
+</html>

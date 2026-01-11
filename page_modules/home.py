@@ -67,3 +67,16 @@ def render():
         </div>
         """, unsafe_allow_html=True)
         st.button("Open Delivery Intelligence", key="btn_di", use_container_width=True, on_click=go_to_tool, args=("Delivery Intelligence",))
+    
+    with col5:
+        st.markdown("""
+        <div class="tool-card">
+            <div class="card-icon">🌐</div>
+            <div class="badge">BETA</div>
+            <h3>Web Data Scraper</h3>
+            <p style="color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">
+                Extract structured data, tables, and content from websites compliant with robots.txt.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        st.button("Open Web Scraper", key="btn_ws", use_container_width=True, on_click=go_to_tool, args=("Web Data Scraper",))

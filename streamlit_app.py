@@ -8,7 +8,7 @@ import streamlit as st
 from components import styles, navigation, footer
 
 # Import page modules
-from page_modules import home, data_augmentor, file_comparison, code_review, delivery_intelligence
+from page_modules import home, data_augmentor, file_comparison, code_review, delivery_intelligence, web_scraper
 
 # Page configuration
 st.set_page_config(
@@ -35,6 +35,8 @@ elif tool == "Code Review":
     code_review.render()
 elif tool == "Delivery Intelligence":
     delivery_intelligence.render()
+elif tool == "Web Data Scraper":
+    web_scraper.render()
 
 # Render footer
 footer.render_footer()

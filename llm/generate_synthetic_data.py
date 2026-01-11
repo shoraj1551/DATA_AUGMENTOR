@@ -41,16 +41,24 @@ def _call_llm_for_synthetic_data(user_prompt: str):
     return response
 
 
-def generate_synthetic_data(user_prompt: str, return_csv: bool = False):
+def generate_synthetic_data(user_prompt: str, num_rows: int = DEFAULT_ROWS, return_csv: bool = False):
     """
     Generate synthetic tabular data from a natural language prompt.
-
+    
+    Args:
+        user_prompt: Description of the data to generate
+        num_rows: Number of rows to generate
+        return_csv: If True, return CSV StringIO; if False, return DataFrame
+    
     Returns:
         - pandas DataFrame (default)
         - CSV StringIO if return_csv=True (ready for download)
     """
+    # Add row count to prompt
+    full_prompt = f"{user_prompt}\n\nGenerate exactly {num_rows} rows of data."
+    
     # Call cached LLM function
-    response = _call_llm_for_synthetic_data(user_prompt)
+    response = _call_llm_for_synthetic_data(full_prompt)
 
     # Parse → DataFrame
     df = parse_records(response)

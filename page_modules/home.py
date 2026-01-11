@@ -57,10 +57,10 @@ def render():
             st.session_state.tool = "Code Review"
             st.rerun()
     
-    # Second row - 1 tool (centered)
-    col4, col5, col6 = st.columns([1, 2, 1])
+    # Second row - Delivery Intelligence aligned under first column
+    col4, col5, col6 = st.columns(3)
     
-    with col5:
+    with col4:
         st.markdown("""
         <div class="tool-card">
             <div class="card-icon">🎯</div>

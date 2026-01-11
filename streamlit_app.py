@@ -286,6 +286,66 @@ elif tool == "🔍 Code Review & Testing":
     
     selected_lang = st.selectbox("Select Language (or auto-detect):", ["Auto-detect"] + list(languages.keys()))
     
+    # Config download/upload section
+    st.markdown("---")
+    st.subheader("📋 Code Review Configuration (Optional)")
+    st.info("**Python, PySpark, SQL, Spark SQL** have detailed configs. Other languages use generic config.")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Download config button
+        if st.button("📥 Download Config for Selected Language"):
+            # Determine which config to load
+            if selected_lang != "Auto-detect":
+                lang_key = languages[selected_lang]
+            else:
+                lang_key = "python"  # Default
+            
+            # Load appropriate config
+            detailed_languages = ['python', 'pyspark', 'sql', 'sparksql']
+            if lang_key in detailed_languages:
+                config_file = f'config/code_review_config_{lang_key}.json'
+            else:
+                config_file = 'config/code_review_config_generic.json'
+            
+            try:
+                with open(config_file, 'r') as f:
+                    config_content = f.read()
+                st.download_button(
+                    label=f"💾 Save {lang_key}_config.json",
+                    data=config_content,
+                    file_name=f"code_review_config_{lang_key}.json",
+                    mime="application/json",
+                    key="download_config"
+                )
+            except FileNotFoundError:
+                # Fallback to default
+                with open('config/code_review_config.json', 'r') as f:
+                    config_content = f.read()
+                st.download_button(
+                    label=f"💾 Save default_config.json",
+                    data=config_content,
+                    file_name="code_review_config.json",
+                    mime="application/json",
+                    key="download_config_fallback"
+                )
+    
+    with col2:
+        # Upload custom config
+        uploaded_config = st.file_uploader("📤 Upload Custom Config (JSON)", type=['json'], key="config_upload")
+        if uploaded_config:
+            try:
+                custom_config = json.load(uploaded_config)
+                st.success(f"✅ Custom config loaded: {uploaded_config.name}")
+                with st.expander("View Config"):
+                    st.json(custom_config)
+            except Exception as e:
+                st.error(f"Invalid JSON config: {str(e)}")
+                uploaded_config = None
+    
+    st.markdown("---")
+    
     # File upload
     uploaded_file = st.file_uploader("Upload code file:", 
                                      type=['py', 'ipynb', 'js', 'ts', 'java', 'sql', 'go', 'rs', 'cpp', 'rb', 'php'])

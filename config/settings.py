@@ -19,11 +19,12 @@ except ImportError:
     pass
 
 # OpenRouter API Configuration
-# Priority: 1. .env file, 2. Streamlit secrets, 3. Environment variable
+# Priority: 1. Streamlit secrets, 2. .env file, 3. Environment variable
 try:
     import streamlit as st
-    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY") or st.secrets.get("OPENROUTER_API_KEY")
-    print(f"[DEBUG] API Key from os.getenv or st.secrets: {OPENROUTER_API_KEY[:20] if OPENROUTER_API_KEY else 'None'}...")
+    # Try Streamlit secrets first, then fall back to environment
+    OPENROUTER_API_KEY = st.secrets.get("OPENROUTER_API_KEY") or os.getenv("OPENROUTER_API_KEY")
+    print(f"[DEBUG] API Key from st.secrets or os.getenv: {OPENROUTER_API_KEY[:20] if OPENROUTER_API_KEY else 'None'}...")
 except:
     # Not running in Streamlit, use environment variable
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")

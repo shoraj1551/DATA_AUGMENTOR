@@ -146,30 +146,46 @@ st.markdown("""
         color: #475569;
     }
 
-    /* 7. Utilities */
-    .badge {
+    /* 8. Back Button */
+    .back-btn {
         display: inline-flex;
         align-items: center;
-        padding: 0.25rem 0.75rem;
-        background-color: #f1f5f9; /* Slate-100 */
-        color: #475569; /* Slate-600 */
-        border-radius: 9999px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 1rem;
+        text-decoration: none;
+        color: #64748b;
+        font-weight: 500;
+        font-size: 0.9rem;
+        margin-bottom: 20px;
+        cursor: pointer;
+        border: 1px solid #e2e8f0;
+        padding: 5px 12px;
+        border-radius: 6px;
+        background: white;
+        transition: all 0.2s;
     }
     
-    hr {
-        margin: 2rem 0;
-        border-color: #e2e8f0;
+    .back-btn:hover {
+        background: #f8fafc;
+        color: #2563eb;
+        border-color: #cbd5e1;
     }
 </style>
 """, unsafe_allow_html=True)
 
+# Helper function for back button
+def back_to_home():
+    if st.button("← Back to Home", key=f"back_{tool}", type="secondary", help="Return to Dashboard"):
+        st.session_state.tool = "Home"
+        st.rerun()
+
 # Sidebar navigation
 st.sidebar.markdown("### 🧭 Navigation")
+tool = st.sidebar.radio(
+    "Go to:",
+    ["Home", "DataAugmentor", "File Comparison", "Code Review"],
+    index=["Home", "DataAugmentor", "File Comparison", "Code Review"].index(st.session_state.tool) if st.session_state.tool in ["Home", "DataAugmentor", "File Comparison", "Code Review"] else 0,
+    label_visibility="collapsed",
+    key="sidebar_tool_radio"
+)
 
 # Initialize session state for tool
 if "tool" not in st.session_state:

@@ -267,6 +267,7 @@ if tool == "Home":
 
 # DATAAUGMENTOR
 elif tool == "DataAugmentor":
+    back_to_home()
     st.markdown('<h2 class="main-header">DataAugmentor</h2>', unsafe_allow_html=True)
     st.markdown('<p class="subtitle">Generate, augment, and secure your data</p>', unsafe_allow_html=True)
     
@@ -412,6 +413,7 @@ elif tool == "DataAugmentor":
 
 # FILE COMPARISON
 elif tool == "File Comparison":
+    back_to_home()
     st.markdown('<h2 class="main-header">File Comparison</h2>', unsafe_allow_html=True)
     st.markdown('<p class="subtitle">Compare datasets with precision</p>', unsafe_allow_html=True)
     
@@ -477,6 +479,7 @@ elif tool == "File Comparison":
 
 # CODE REVIEW
 elif tool == "Code Review":
+    back_to_home()
     st.markdown('<h2 class="main-header">Code Review & Testing</h2>', unsafe_allow_html=True)
     st.markdown('<p class="subtitle">AI-powered code quality assurance</p>', unsafe_allow_html=True)
     

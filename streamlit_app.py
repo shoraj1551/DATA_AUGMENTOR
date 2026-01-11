@@ -172,8 +172,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Helper function for back button
-def back_to_home():
-    if st.button("← Back to Home", key=f"back_{tool}", type="secondary", help="Return to Dashboard"):
+def back_to_home(tool_name):
+    if st.button("← Back to Home", key=f"back_{tool_name}", type="secondary", help="Return to Dashboard"):
         st.session_state.tool = "Home"
         st.rerun()
 
@@ -267,7 +267,7 @@ if tool == "Home":
 
 # DATAAUGMENTOR
 elif tool == "DataAugmentor":
-    back_to_home()
+    back_to_home("DataAugmentor")
     st.markdown('<h2 class="main-header">DataAugmentor</h2>', unsafe_allow_html=True)
     st.markdown('<p class="subtitle">Generate, augment, and secure your data</p>', unsafe_allow_html=True)
     
@@ -413,7 +413,7 @@ elif tool == "DataAugmentor":
 
 # FILE COMPARISON
 elif tool == "File Comparison":
-    back_to_home()
+    back_to_home("FileComparison")
     st.markdown('<h2 class="main-header">File Comparison</h2>', unsafe_allow_html=True)
     st.markdown('<p class="subtitle">Compare datasets with precision</p>', unsafe_allow_html=True)
     
@@ -479,7 +479,7 @@ elif tool == "File Comparison":
 
 # CODE REVIEW
 elif tool == "Code Review":
-    back_to_home()
+    back_to_home("CodeReview")
     st.markdown('<h2 class="main-header">Code Review & Testing</h2>', unsafe_allow_html=True)
     st.markdown('<p class="subtitle">AI-powered code quality assurance</p>', unsafe_allow_html=True)
     

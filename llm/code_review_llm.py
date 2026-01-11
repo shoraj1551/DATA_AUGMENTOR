@@ -1,4 +1,4 @@
-from llm.client import client
+from llm.client import get_client
 from utils.cache import llm_cache
 from config.settings import MODEL_NAME
 
@@ -38,7 +38,7 @@ Return JSON with this structure:
 
 Return ONLY valid JSON with code review findings."""
 
-    response = client.chat.completions.create(
+    response = get_client().chat.completions.create(
         model="openai/gpt-4o-mini",
         messages=[
             {"role": "system", "content": system_prompt},
@@ -76,7 +76,7 @@ Return ONLY the test code, no explanations."""
 
 Return complete, runnable test code."""
 
-    response = client.chat.completions.create(
+    response = get_client().chat.completions.create(
         model="openai/gpt-4o-mini",
         messages=[
             {"role": "system", "content": system_prompt},
@@ -112,7 +112,7 @@ Return ONLY the test code."""
 
 Return complete, runnable test code."""
 
-    response = client.chat.completions.create(
+    response = get_client().chat.completions.create(
         model="openai/gpt-4o-mini",
         messages=[
             {"role": "system", "content": system_prompt},
@@ -157,7 +157,7 @@ Return JSON:
 
 Return ONLY valid JSON."""
 
-    response = client.chat.completions.create(
+    response = get_client().chat.completions.create(
         model="openai/gpt-4o-mini",
         messages=[
             {"role": "system", "content": system_prompt},

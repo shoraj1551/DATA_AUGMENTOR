@@ -1,4 +1,4 @@
-from llm.client import client
+from llm.client import get_client
 from utils.json_utils import parse_records
 from config.settings import MODEL_NAME
 
@@ -26,7 +26,7 @@ Mandatory format: {"records": [...]}"""
 Generate exactly {num_rows} edge-case records with IDENTICAL schema.
 Return ONLY the JSON object with "records" field."""
 
-    response = client.chat.completions.create(
+    response = get_client().chat.completions.create(
         model=MODEL_NAME,
         messages=[
             {"role": "system", "content": system_prompt},

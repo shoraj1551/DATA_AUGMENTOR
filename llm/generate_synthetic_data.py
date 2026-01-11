@@ -1,6 +1,6 @@
 import io
 import pandas as pd
-from llm.client import client
+from llm.client import get_client
 from utils.json_utils import parse_records
 from utils.cache import llm_cache
 from config.settings import MODEL_NAME, DEFAULT_ROWS, MAX_ROWS
@@ -29,7 +29,7 @@ def _call_llm_for_synthetic_data(user_prompt: str):
         "records": [{{ "column": "value" }}]
     }}"""
 
-    response = client.chat.completions.create(
+    response = get_client().chat.completions.create(
         model=MODEL_NAME,
         messages=[
             {"role": "system", "content": system_instruction},

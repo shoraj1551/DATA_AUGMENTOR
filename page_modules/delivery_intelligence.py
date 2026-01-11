@@ -211,209 +211,252 @@ def render():
     
     # TAB 2: MY PLANS
     with tab2:
-        st.subheader("All Execution Plans")
-        
-        # Filters
-        col1, col2 = st.columns([1, 3])
-        with col1:
-            status_filter = st.selectbox(
-                "Filter by Status:",
-                ["All", "draft", "pending_approval", "approved", "in_progress", "completed"]
-            )
-        
-        # Get plans
-        if status_filter == "All":
-            plans = db.get_all_plans()
-        else:
-            plans = db.get_plans_by_status(status_filter)
-        
-        if plans:
-            st.markdown(f"**Found {len(plans)} plan(s)**")
+    # TAB 2: MY PLANS & EXECUTION BOARD
+    with tab2:
+        # Initialize View State
+        if "view_plan_id" not in st.session_state:
+            st.session_state.view_plan_id = None
             
-            for plan in reversed(plans):  # Show newest first
-                # Status badge color
-                status_colors = {
-                    "draft": "#94a3b8",
-                    "pending_approval": "#f59e0b",
-                    "approved": "#10b981",
-                    "in_progress": "#3b82f6",
-                    "completed": "#6366f1"
-                }
-                progress = calculate_progress(plan)
-                status_color = status_colors.get(plan['status'], "#64748b")
+        # === DETAIL VIEW (FULL PAGE EXECUTION BOARD) ===
+        if st.session_state.view_plan_id:
+            plan = db.get_plan(st.session_state.view_plan_id)
+            
+            if not plan: 
+                # Handle case where plan was deleted
+                st.session_state.view_plan_id = None
+                st.rerun()
+            
+            # Header with Back Button
+            b_col1, b_col2 = st.columns([1, 5])
+            with b_col1:
+                if st.button("⬅️ Back", key="back_to_list"):
+                    st.session_state.view_plan_id = None
+                    st.rerun()
+            
+            with b_col2:
+                st.markdown(f"### 🚀 Execution Board: {plan['title']}")
+                st.caption(f"{plan['description']}")
+            
+            # Plan Metadata Bar
+            status_colors = {"draft": "#94a3b8","pending_approval": "#f59e0b","approved": "#10b981","in_progress": "#3b82f6","completed": "#6366f1"}
+            color = status_colors.get(plan['status'], "#64748b")
+            st.markdown(f"""
+                <div style="background-color: #f8fafc; padding: 10px 20px; border-radius: 8px; border-left: 5px solid {color}; display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+                     <span style="font-weight:bold; color:{color}">{plan['status'].upper()}</span>
+                     <span>📅 {plan['created_at'][:10]}</span>
+                     <span>👤 {plan['engineer_level']}</span>
+                     <span>⏱️ {plan.get('estimated_total_days', 0)} Days Est</span>
+                     <span>📊 {calculate_progress(plan)}% Complete</span>
+                </div>
+            """, unsafe_allow_html=True)
+
+            # Execution Tools
+            col_tools, col_filter = st.columns([2, 1])
+            with col_tools:
+                # PM Controls
+                if pm_mode and plan['status'] == 'pending_approval':
+                    st.warning("⚠️ This plan is pending approval")
+                    cols = st.columns(2)
+                    if cols[0].button("✅ Approve Plan", key="app_main", type="primary"):
+                        db.update_plan_status(plan['plan_id'], "in_progress")
+                        st.rerun()
+                    if cols[1].button("❌ Reject Plan", key="rej_main"):
+                        db.update_plan_status(plan['plan_id'], "draft")
+                        st.rerun()
+            
+            with col_filter:
+                # Filter by Assignee
+                assignees = set()
+                for epic in plan.get('epics', []):
+                    for story in epic.get('stories', []):
+                        for task in story.get('tasks', []):
+                            assignees.add(task.get('assignee_name', 'Unassigned'))
                 
-                with st.container():
-                    col_info, col_actions = st.columns([4, 1])
-                    
-                    with col_info:
-                        st.markdown(f"""
-                        <div style="padding: 1rem; border-left: 4px solid {status_color}; background: #f8fafc; border-radius: 8px; margin-bottom: 1rem;">
-                            <h4 style="margin: 0 0 0.5rem 0;">{plan['title']}</h4>
-                            <p style="margin: 0; color: #64748b; font-size: 0.9rem;">{plan['description'][:100]}...</p>
-                            <div style="margin-top: 0.5rem;">
-                                <span style="background: {status_color}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
-                                    {plan['status'].upper()}
-                                </span>
-                                <span style="margin-left: 1rem; color: #64748b; font-size: 0.85rem;">
-                                    📅 {plan['created_at'][:10]} | 👤 {plan['engineer_level']} | ⏱️ {plan.get('estimated_total_days', 0)} Days
-                                </span>
-                                <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 10px;">
-                                    <div style="flex-grow: 1; background-color: #e2e8f0; height: 8px; border-radius: 4px;">
-                                        <div style="width: {progress}%; background-color: {status_color}; height: 8px; border-radius: 4px;"></div>
-                                    </div>
-                                    <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">{progress}%</span>
-                                </div>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    
-                    with col_actions:
-                        # PM Approval Workflow
-                        if pm_mode and plan['status'] == 'pending_approval':
-                            if st.button("✅ Approve", key=f"app_{plan['plan_id']}", type="primary"):
-                                db.update_plan_status(plan['plan_id'], "in_progress")
-                                st.success(f"Plan '{plan['title']}' approved!")
+                selected_assignee = st.selectbox("👤 Filter by Assignee", ["All"] + sorted(list(assignees)), key="assignee_filter")
+
+            st.divider()
+
+            # RENDER EPICS AND TASKS (Full Width)
+            for epic in plan.get('epics', []):
+                st.markdown(f"#### 📦 {epic['title']} <span style='font-size:0.8em; color:gray'>({epic.get('estimated_days')}d)</span>", unsafe_allow_html=True)
+                
+                for story in epic.get('stories', []):
+                    with st.container():
+                        st.markdown(f"**📖 {story['title']}**")
+                        # Header Row
+                        h1, h2, h3, h4, h5 = st.columns([2, 4, 3, 1, 1])
+                        h1.caption("Status")
+                        h2.caption("Task")
+                        h3.caption("Timeline & Assignee")
+                        h4.caption("Hrs")
+                        h5.caption("Actions")
+
+                        for task in story.get('tasks', []):
+                            # Apply filter
+                            if selected_assignee != "All" and task.get('assignee_name') != selected_assignee:
+                                continue
+                                
+                            t1, t2, t3, t4, t5 = st.columns([2, 4, 3, 1, 1])
+                            
+                            with t1:
+                                status_options = ["not_started", "in_progress", "code_review", "unit_testing", "completed", "blocked", "verified_closed"]
+                                current_status = task.get('status', 'not_started')
+                                status_dot = {"not_started": "⚪", "in_progress": "🔵", "code_review": "🟡", "unit_testing": "🟠", "completed": "✅", "blocked": "🔴", "verified_closed": "🔒"}.get(current_status, "⚪")
+                                
+                                new_status = st.selectbox(
+                                    "Status", status_options, 
+                                    index=status_options.index(current_status) if current_status in status_options else 0,
+                                    key=f"status_{task['task_id']}", label_visibility="collapsed",
+                                    format_func=lambda x: f"{status_dot} {x.replace('_', ' ').title()}"
+                                )
+
+                            with t2:
+                                st.markdown(f"{task['title']}")
+                                if task.get('description'):
+                                    st.caption(f"{task['description'][:50]}...")
+                            
+                            with t3:
+                                st.caption(f"👤 `{task.get('assignee_name', 'Unassigned')}`")
+                                start = task.get('start_day_offset', 1)
+                                dur = task.get('duration_days', 0.5)
+                                st.caption(f"📅 Day {start} - {start + dur}")
+                            
+                            with t4:
+                                actuals = st.number_input("Hrs", value=float(task.get('actual_hours', 0)), step=0.5, key=f"act_{task['task_id']}", label_visibility="collapsed")
+                            
+                            with t5:
+                                # Comment & PM Verify
+                                comments = task.get('comments', [])
+                                if st.button(f"💬 {len(comments)}", key=f"chat_{task['task_id']}"): # Popover simulation
+                                     # Note: Streamlit buttons just trigger rerun, but we want popover. 
+                                     # Let's use actual popover if available or expander. 
+                                     # Retrying with native popover for consistency with previous step.
+                                     pass 
+                                
+                                # Use popover for comments
+                                with st.popover(f"💬 {len(comments)}"):
+                                    for c in comments:
+                                        st.markdown(f"**{c.get('user', 'User')}**: {c.get('text')}")
+                                        st.divider()
+                                    new_note = st.text_input("Add Note", key=f"note_{task['task_id']}")
+                                    if new_note:
+                                        # Save logic handled below via change detection
+                                        # But text_input inside popover might be tricky for state. 
+                                        # Reverting to direct field outside? No, let's keep inline.
+                                        pass
+
+                                if pm_mode and current_status == "completed":
+                                     if st.button("🔒", key=f"lock_{task['task_id']}", help="Verify"):
+                                         db.update_task_stats(plan['plan_id'], task['task_id'], {"status": "verified_closed"})
+                                         st.rerun()
+
+                            # HANDLING UPDATES SEPARATELY TO AVOID NESTING ISSUES
+                            updates = {}
+                            if new_status != current_status: updates["status"] = new_status
+                            if actuals != task.get('actual_hours', 0): updates["actual_hours"] = actuals
+                            
+                            # Note input handling (Since we can't easily capture text_input inside popover and act on it immediately in loop without callback)
+                            # We will use the simplified approach from before for "Add Note" but keep history in popover
+                            
+                            # Re-implement Note Input:
+                            # notes = st.text_input("Note", key=f"inline_note_{task['task_id']}", label_visibility="collapsed", placeholder="Add note...")
+                            # if notes: ... 
+                            # Let's trust the previous "Add" input mechanism or just rely on the popover text input if user presses enter?
+                            # Streamlit text_input updates session state on enter. 
+                            
+                            # Check session state for the note input key
+                            note_key = f"note_{task['task_id']}"
+                            if note_key in st.session_state and st.session_state[note_key]:
+                                note_text = st.session_state[note_key]
+                                from datetime import datetime
+                                current_comments = list(task.get('comments', []))
+                                current_comments.append({
+                                    "user": "PM" if pm_mode else "Engineer", 
+                                    "text": note_text,
+                                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
+                                })
+                                updates["comments"] = current_comments
+                                del st.session_state[note_key] # Clear
+                            
+                            if updates:
+                                db.update_task_stats(plan['plan_id'], task['task_id'], updates)
                                 st.rerun()
                                 
-                            if st.button("❌ Reject", key=f"rej_{plan['plan_id']}"):
-                                db.update_plan_status(plan['plan_id'], "draft")
-                                st.warning(f"Plan '{plan['title']}' rejected (sent back to draft).")
+                            st.markdown("---")
+
+
+        # === MASTER VIEW (LIST OF PLANS) ===
+        else:
+            st.subheader("All Execution Plans")
+            
+            # Filters
+            col1, col2 = st.columns([1, 3])
+            with col1:
+                status_filter = st.selectbox(
+                    "Filter by Status:",
+                    ["All", "draft", "pending_approval", "approved", "in_progress", "completed"]
+                )
+            
+            # Get plans
+            if status_filter == "All":
+                plans = db.get_all_plans()
+            else:
+                plans = db.get_plans_by_status(status_filter)
+            
+            if plans:
+                st.markdown(f"**Found {len(plans)} plan(s)**")
+                
+                for plan in reversed(plans):  # Show newest first
+                    # Status badge color
+                    status_colors = {
+                        "draft": "#94a3b8", "pending_approval": "#f59e0b",
+                        "approved": "#10b981", "in_progress": "#3b82f6", "completed": "#6366f1"
+                    }
+                    progress = calculate_progress(plan)
+                    status_color = status_colors.get(plan['status'], "#64748b")
+                    
+                    with st.container():
+                        col_info, col_actions = st.columns([4, 1])
+                        
+                        with col_info:
+                            st.markdown(f"""
+                            <div style="padding: 1rem; border-left: 4px solid {status_color}; background: #f8fafc; border-radius: 8px; margin-bottom: 1rem;">
+                                <h4 style="margin: 0 0 0.5rem 0;">{plan['title']}</h4>
+                                <p style="margin: 0; color: #64748b; font-size: 0.9rem;">{plan['description'][:100]}...</p>
+                                <div style="margin-top: 0.5rem;">
+                                    <span style="background: {status_color}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+                                        {plan['status'].upper()}
+                                    </span>
+                                    <span style="margin-left: 1rem; color: #64748b; font-size: 0.85rem;">
+                                        📅 {plan['created_at'][:10]} | 👤 {plan['engineer_level']}
+                                    </span>
+                                    <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 10px;">
+                                        <div style="flex-grow: 1; background-color: #e2e8f0; height: 6px; border-radius: 4px;">
+                                            <div style="width: {progress}%; background-color: {status_color}; height: 6px; border-radius: 4px;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        with col_actions:
+                            # Primary Action: Open Board
+                            if st.button("🚀 Open Board", key=f"open_{plan['plan_id']}", use_container_width=True):
+                                st.session_state.view_plan_id = plan['plan_id']
                                 st.rerun()
 
-                        # Execution Board (Replacing simple expander)
-                        with st.expander("🚀 Execution Board & Tasks", expanded=False):
-                             # Filter by Assignee
-                             assignees = set()
-                             for epic in plan.get('epics', []):
-                                 for story in epic.get('stories', []):
-                                     for task in story.get('tasks', []):
-                                         assignees.add(task.get('assignee_name', 'Unassigned'))
-                             
-                             filter_col, _ = st.columns([1, 2])
-                             with filter_col:
-                                 selected_assignee = st.selectbox(
-                                     "Filter by Assignee", 
-                                     ["All"] + sorted(list(assignees)),
-                                     key=f"filter_{plan['plan_id']}"
-                                 )
-
-                             for epic in plan.get('epics', []):
-                                st.markdown(f"##### 📦 {epic['title']}")
-                                for story in epic.get('stories', []):
-                                    st.markdown(f"**📖 {story['title']}**")
-                                    
-                                    # Task Table Header
-                                    # st.markdown("| Status | Task | Assignee | Est | Act | Notes |")
-                                    # st.markdown("|---|---|---|---|---|---|")
-                                    
-                                    for task in story.get('tasks', []):
-                                        # Apply filter
-                                        if selected_assignee != "All" and task.get('assignee_name') != selected_assignee:
-                                            continue
-                                            
-                                        # Task Row UI
-                                        t_col1, t_col2, t_col3, t_col4, t_col5 = st.columns([2, 4, 2, 1, 2])
-                                        
-                                        with t_col1:
-                                            # Status Dropdown
-                                            status_options = ["not_started", "in_progress", "code_review", "unit_testing", "completed", "blocked", "verified_closed"]
-                                            current_status = task.get('status', 'not_started')
-                                            
-                                            # Color code status
-                                            status_dot = {
-                                                "not_started": "⚪", "in_progress": "🔵", 
-                                                "code_review": "🟡", "unit_testing": "🟠", 
-                                                "completed": "✅", "blocked": "🔴", "verified_closed": "🔒"
-                                            }.get(current_status, "⚪")
-                                            
-                                            new_status = st.selectbox(
-                                                f"Status", 
-                                                status_options,
-                                                index=status_options.index(current_status) if current_status in status_options else 0,
-                                                key=f"st_{task['task_id']}",
-                                                label_visibility="collapsed",
-                                                format_func=lambda x: f"{status_dot} {x.replace('_', ' ').title()}"
-                                            )
-                                        
-                                        with t_col2:
-                                            st.markdown(f"**{task['title']}**")
-                                            st.caption(f"👤 `{task.get('assignee_name', 'Unassigned')}`")
-                                            
-                                            # Dates Display
-                                            start_day = task.get('start_day_offset', 1)
-                                            duration = task.get('duration_days', 0.5)
-                                            st.caption(f"📅 Day {start_day} - {start_day + duration} (Est)")
-                                        
-                                        with t_col3:
-                                            # Actual Hours Input
-                                            actuals = st.number_input(
-                                                "Hrs", 
-                                                value=float(task.get('actual_hours', 0)), 
-                                                step=0.5,
-                                                key=f"act_{task['task_id']}",
-                                                label_visibility="collapsed",
-                                                help="Actual Hours Spent"
-                                            )
-                                        
-                                        with t_col4:
-                                            st.caption(f"Est: {task.get('estimated_hours', 0)}h")
-                                        
-                                        with t_col5:
-                                            # Comment History & Add Note
-                                            comments = task.get('comments', [])
-                                            
-                                            if comments:
-                                                with st.popover(f"💬 {len(comments)}", use_container_width=False):
-                                                    for c in comments:
-                                                        st.markdown(f"**{c.get('user', 'User')}**: {c.get('text')}")
-                                                        st.caption(f"_{c.get('timestamp')}_")
-                                                        st.divider()
-                                            
-                                            # Add new note
-                                            new_note = st.text_input(
-                                                "Add",
-                                                key=f"note_{task['task_id']}",
-                                                placeholder="...",
-                                                label_visibility="collapsed"
-                                            )
-
-                                            # PM Close Button
-                                            if pm_mode and current_status == "completed":
-                                                if st.button("🔒", key=f"close_{task['task_id']}", help="PM: Verify & Close Task"):
-                                                    db.update_task_stats(plan['plan_id'], task['task_id'], {"status": "verified_closed"})
-                                                    st.toast(f"Task '{task['title']}' verified and closed!")
-                                                    st.rerun()
-
-                                        # Update Logic
-                                        updates = {}
-                                        if new_status != current_status:
-                                            updates["status"] = new_status
-                                        
-                                        if actuals != task.get('actual_hours', 0):
-                                            updates["actual_hours"] = actuals
-                                            
-                                        # Check if notes added
-                                        if new_note and new_note.strip():
-                                            from datetime import datetime
-                                            current_comments = list(task.get('comments', []))
-                                            current_comments.append({
-                                                "user": "PM" if pm_mode else "Engineer", 
-                                                "text": new_note,
-                                                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
-                                            })
-                                            updates["comments"] = current_comments
-                                            st.toast("Comment added")
-                                            # Auto-clear input by not saving it to session state? 
-                                            # Streamlit input clearing is tricky, usually requires rerun or key encoding.
-                                            # We will just save and rerun.
-                                        
-                                        if updates:
-                                            db.update_task_stats(plan['plan_id'], task['task_id'], updates)
-                                            st.rerun()
-                                        
-                                        st.markdown("---")
-        else:
-            st.info("No plans found. Create your first plan in the 'Create Plan' tab!")
+                            # PM Quick Actions
+                            if pm_mode and plan['status'] == 'pending_approval':
+                                if st.button("✅ Approve", key=f"app_{plan['plan_id']}", type="primary", use_container_width=True):
+                                    db.update_plan_status(plan['plan_id'], "in_progress")
+                                    st.success("Approved!")
+                                    st.rerun()
+                            
+                            if st.button("🗑️ Delete", key=f"del_{plan['plan_id']}", use_container_width=True):
+                                db.delete_plan(plan['plan_id'])
+                                st.rerun()
+            else:
+                st.info("No plans found. Create your first plan in the 'Create Plan' tab!")
     
     # TAB 3: DASHBOARD
     with tab3:

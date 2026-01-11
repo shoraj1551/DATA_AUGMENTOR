@@ -49,13 +49,22 @@ Return ONLY the JSON object with "records" field."""
     return response
 
 
-def augment_existing_data(df, num_rows=10):
+def augment_existing_data(df, prompt="", num_rows=10):
     """
     Augment existing data with new rows.
+    
+    Args:
+        df: DataFrame to augment
+        prompt: Optional additional requirements
+        num_rows: Number of rows to add
     """
     # Convert DataFrame to JSON string for caching (limit size)
     data_dict = df.head(10).to_dict(orient="records")  # Use only first 10 rows as sample
     data_json = str(data_dict)
+    
+    # Add prompt to requirements if provided
+    if prompt:
+        data_json = f"{data_json}\n\nAdditional requirements: {prompt}"
     
     # Call cached LLM function
     response = _call_llm_for_augmentation(data_json, num_rows)

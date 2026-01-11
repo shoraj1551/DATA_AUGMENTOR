@@ -90,11 +90,53 @@ def render():
         with col2:
             st.markdown("### Experience Guide")
             st.markdown("""
-            - **Junior**: 0-2 years
-            - **Mid**: 2-5 years
-            - **Senior**: 5-10 years
             - **Lead**: 10+ years
             """, unsafe_allow_html=True)
+        
+        # Team Configuration
+        st.markdown("### 👥 Team Setup (Optional)")
+        with st.expander("Define Team Members", expanded=False):
+            st.info("Add your team members here. The AI will assign tasks based on their roles.")
+            
+            # Initialize session state for team if not exists
+            if "team_roster" not in st.session_state:
+                st.session_state.team_roster = [{"name": "Engineer 1", "role": "Full Stack", "level": "mid"}]
+            
+            # Simple form to add/manage team
+            # We use a data editor for managing the team list easily
+            team_df = pd.DataFrame(st.session_state.team_roster)
+            edited_team = st.data_editor(
+                team_df,
+                num_rows="dynamic",
+                column_config={
+                    "name": "Name",
+                    "role": st.column_config.SelectboxColumn(
+                        "Role",
+                        options=["Backend", "Frontend", "Full Stack", "Data Eng", "DevOps", "QA", "Architect"],
+                        required=True
+                    ),
+                    "level": st.column_config.SelectboxColumn(
+                        "Level",
+                        options=["junior", "mid", "senior", "lead"],
+                        required=True
+                    )
+                },
+                key="team_editor"
+            )
+            
+            # Update session state from editor
+            st.session_state.team_roster = edited_team.to_dict("records")
+            
+            # Prepare team list with IDs for the backend
+            final_team_roster = []
+            for idx, member in enumerate(st.session_state.team_roster):
+                if member["name"]:  # Only include if name is present
+                    final_team_roster.append({
+                        "id": f"eng_{idx}",
+                        "name": member["name"],
+                        "role": member["role"],
+                        "level": member["level"]
+                    })
         
         # Generate button
         if st.button("🎯 Generate Execution Plan", type="primary", use_container_width=True):
@@ -102,7 +144,7 @@ def render():
                 with st.spinner("🤖 AI is generating your execution plan..."):
                     try:
                         # Generate plan
-                        plan = generate_execution_plan(prompt, engineer_level)
+                        plan = generate_execution_plan(prompt, engineer_level, team_members=final_team_roster)
                         
                         # Save to database
                         plan_id = db.save_plan(plan)
@@ -238,34 +280,119 @@ def render():
                                 st.warning(f"Plan '{plan['title']}' rejected (sent back to draft).")
                                 st.rerun()
 
-                        # View / Edit Details and Task Management
-                        with st.expander("Show Details & Tasks"):
+                        # Execution Board (Replacing simple expander)
+                        with st.expander("🚀 Execution Board & Tasks", expanded=False):
+                             # Filter by Assignee
+                             assignees = set()
                              for epic in plan.get('epics', []):
-                                st.markdown(f"**{epic['title']}**")
+                                 for story in epic.get('stories', []):
+                                     for task in story.get('tasks', []):
+                                         assignees.add(task.get('assignee_name', 'Unassigned'))
+                             
+                             filter_col, _ = st.columns([1, 2])
+                             with filter_col:
+                                 selected_assignee = st.selectbox(
+                                     "Filter by Assignee", 
+                                     ["All"] + sorted(list(assignees)),
+                                     key=f"filter_{plan['plan_id']}"
+                                 )
+
+                             for epic in plan.get('epics', []):
+                                st.markdown(f"##### 📦 {epic['title']}")
                                 for story in epic.get('stories', []):
-                                    st.markdown(f"&nbsp;&nbsp;*Story: {story['title']}*")
+                                    st.markdown(f"**📖 {story['title']}**")
+                                    
+                                    # Task Table Header
+                                    # st.markdown("| Status | Task | Assignee | Est | Act | Notes |")
+                                    # st.markdown("|---|---|---|---|---|---|")
+                                    
                                     for task in story.get('tasks', []):
-                                        # Task checkbox (Interactive only if In Progress)
-                                        task_key = f"task_{task['task_id']}"
-                                        is_completed = task['status'] == 'done'
+                                        # Apply filter
+                                        if selected_assignee != "All" and task.get('assignee_name') != selected_assignee:
+                                            continue
+                                            
+                                        # Task Row UI
+                                        t_col1, t_col2, t_col3, t_col4, t_col5 = st.columns([2, 4, 2, 1, 2])
                                         
-                                        # Only allow checking if plan is in progress
-                                        disabled = plan['status'] != 'in_progress'
+                                        with t_col1:
+                                            # Status Dropdown
+                                            status_options = ["not_started", "in_progress", "code_review", "unit_testing", "completed", "blocked"]
+                                            current_status = task.get('status', 'not_started')
+                                            
+                                            # Color code status
+                                            status_dot = {
+                                                "not_started": "⚪", "in_progress": "🔵", 
+                                                "code_review": "🟡", "unit_testing": "🟠", 
+                                                "completed": "✅", "blocked": "🔴"
+                                            }.get(current_status, "⚪")
+                                            
+                                            new_status = st.selectbox(
+                                                f"Status", 
+                                                status_options,
+                                                index=status_options.index(current_status) if current_status in status_options else 0,
+                                                key=f"st_{task['task_id']}",
+                                                label_visibility="collapsed",
+                                                format_func=lambda x: f"{status_dot} {x.replace('_', ' ').title()}"
+                                            )
                                         
-                                        new_status = st.checkbox(
-                                            f"{task['title']} ({task.get('estimated_hours',0)}h)", 
-                                            value=is_completed, 
-                                            key=task_key,
-                                            disabled=disabled
-                                        )
+                                        with t_col2:
+                                            st.markdown(f"**{task['title']}**")
+                                            st.caption(f"Assigned: `{task.get('assignee_name', 'Unassigned')}`")
                                         
-                                        # Handle status change
-                                        if not disabled and new_status != is_completed:
-                                            # Update task status in memory plan object
-                                            task['status'] = 'done' if new_status else 'todo'
-                                            # Save updated plan to DB
-                                            db.save_plan(plan)
-                                            st.rerun()
+                                        with t_col3:
+                                            # Actual Hours Input
+                                            actuals = st.number_input(
+                                                "Hrs", 
+                                                value=float(task.get('actual_hours', 0)), 
+                                                step=0.5,
+                                                key=f"act_{task['task_id']}",
+                                                label_visibility="collapsed",
+                                                help="Actual Hours Spent"
+                                            )
+                                        
+                                        with t_col4:
+                                            st.caption(f"Est: {task.get('estimated_hours', 0)}h")
+                                        
+                                        with t_col5:
+                                            # Comment / Notes (Simplified)
+                                            notes = st.text_input(
+                                                "Notes",
+                                                value=task.get('comments', [{}])[-1].get('text', '') if task.get('comments') else "",
+                                                key=f"note_{task['task_id']}",
+                                                placeholder="Add note...",
+                                                label_visibility="collapsed"
+                                            )
+
+                                        # Update Logic
+                                        updates = {}
+                                        if new_status != current_status:
+                                            updates["status"] = new_status
+                                        
+                                        if actuals != task.get('actual_hours', 0):
+                                            updates["actual_hours"] = actuals
+                                            
+                                        # Check if notes changed
+                                        last_note = task.get('comments', [{}])[-1].get('text', '') if task.get('comments') else ""
+                                        if notes != last_note and notes.strip():
+                                            # Append new comment
+                                            current_comments = task.get('comments', [])
+                                            current_comments.append({
+                                                "user": "User", # Todo: get actual user
+                                                "text": notes,
+                                                "timestamp": "now"
+                                            })
+                                            updates["comments"] = current_comments
+                                        
+                                        if updates:
+                                            db.update_task_stats(plan['plan_id'], task['task_id'], updates)
+                                            # We don't rerun immediately to allow bulk edits, but visual feedback is delayed. 
+                                            # For better UX, we might want to rerun, but it interrupts flow. 
+                                            # Let's rerun for status changes at least.
+                                            if "status" in updates: 
+                                                st.toast(f"Updated task: {task['title']}")
+                                                st.rerun()
+                                        
+                                        st.markdown("---")
         else:
             st.info("No plans found. Create your first plan in the 'Create Plan' tab!")
     

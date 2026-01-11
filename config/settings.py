@@ -5,9 +5,17 @@ from pathlib import Path
 try:
     from dotenv import load_dotenv
     env_path = Path(__file__).parent.parent / '.env'
-    load_dotenv(dotenv_path=env_path)
+    print(f"[DEBUG] Looking for .env file at: {env_path}")
+    print(f"[DEBUG] .env file exists: {env_path.exists()}")
+    
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path)
+        print(f"[DEBUG] Loaded .env file successfully")
+    else:
+        print(f"[DEBUG] .env file not found, skipping")
 except ImportError:
     # python-dotenv not installed, skip
+    print("[DEBUG] python-dotenv not installed, skipping .env loading")
     pass
 
 # OpenRouter API Configuration
@@ -15,12 +23,16 @@ except ImportError:
 try:
     import streamlit as st
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY") or st.secrets.get("OPENROUTER_API_KEY")
+    print(f"[DEBUG] API Key from os.getenv or st.secrets: {OPENROUTER_API_KEY[:20] if OPENROUTER_API_KEY else 'None'}...")
 except:
     # Not running in Streamlit, use environment variable
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+    print(f"[DEBUG] API Key from os.getenv (no Streamlit): {OPENROUTER_API_KEY[:20] if OPENROUTER_API_KEY else 'None'}...")
 
 if not OPENROUTER_API_KEY:
     print("WARNING: OPENROUTER_API_KEY not set. Please configure it in .env, .streamlit/secrets.toml or environment variables.")
+else:
+    print(f"[DEBUG] Final API Key loaded: {OPENROUTER_API_KEY[:20]}... (length: {len(OPENROUTER_API_KEY)})")
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 MODEL_NAME = "openai/gpt-4o-mini"

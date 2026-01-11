@@ -8,7 +8,7 @@ import streamlit as st
 from components import styles, navigation, footer
 
 # Import page modules
-from pages import home, data_augmentor, file_comparison, code_review, delivery_intelligence
+from page_modules import home, data_augmentor, file_comparison, code_review, delivery_intelligence
 
 # Page configuration
 st.set_page_config(

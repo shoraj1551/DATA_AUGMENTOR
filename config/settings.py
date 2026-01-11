@@ -106,7 +106,8 @@ FREE_MODELS_BY_USE_CASE = {
             "Handles epics → stories → tasks well",
             "Good at effort estimation & breakdowns",
             "Stable long-context performance"
-        ]
+        ],
+    },
 
 
     # ================================

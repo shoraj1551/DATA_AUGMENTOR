@@ -26,186 +26,217 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS matching Flask App
+# Custom CSS - Minimalist & Professional Design System
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-
+    /* 1. Global Typography & Reset */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    
     html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #1e293b; /* Slate-800 for high contrast text */
+        background-color: #f8fafc; /* Very light slate background */
     }
 
-    /* Gradient Headers */
+    /* 2. Headers */
     .main-header {
-        font-size: 3.5rem;
+        font-family: 'Inter', sans-serif;
         font-weight: 700;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-align: center;
-        padding: 1rem 0;
-        margin-bottom: 30px;
+        font-size: 2.5rem;
+        color: #0f172a; /* Slate-900 */
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
     }
     
     .subtitle {
-        text-align: center;
-        color: #666;
-        font-size: 1.2rem;
-        margin-bottom: 50px;
-    }
-
-    /* Card Styling */
-    .tool-card {
-        background: white;
-        border-radius: 20px;
-        padding: 30px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        border: 1px solid #f0f0f0;
-        height: 100%;
-        transition: transform 0.3s ease;
+        font-size: 1.1rem;
+        color: #64748b; /* Slate-500 */
+        font-weight: 400;
+        margin-bottom: 3rem;
     }
     
-    .tool-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-    }
-    
-    .card-top-border {
-        height: 5px;
-        background: linear-gradient(90deg, #667eea, #764ba2);
-        border-radius: 20px 20px 0 0;
-        margin: -30px -30px 20px -30px;
-    }
-
-    /* Buttons */
-    .stButton > button {
-        background-color: #2563eb;
-        color: white;
-        border-radius: 6px;
-        border: none;
-        padding: 0.6rem 1.2rem;
+    h1, h2, h3 {
+        color: #0f172a;
         font-weight: 600;
-        width: 100%;
-        transition: all 0.2s;
-    }
-    
-    .stButton > button:hover {
-        background-color: #1d4ed8;
-        transform: scale(1.02);
+        letter-spacing: -0.01em;
     }
 
-    /* Inputs */
-    .stTextInput input, .stSelectbox div[data-baseweb="select"] {
-        border-radius: 6px;
-        border-color: #d1d5db;
+    /* 3. Cards (Minimalist) */
+    .tool-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0; /* Slate-200 */
+        border-radius: 12px;
+        padding: 2rem;
+        height: 100%;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .tool-card:hover {
+        border-color: #cbd5e1; /* Slate-300 */
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        transform: translateY(-2px);
     }
     
-    /* Sidebar */
+    .card-icon {
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+        background: #f1f5f9;
+        width: 3.5rem;
+        height: 3.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+    }
+
+    /* 4. Buttons (Professional Blue) */
+    .stButton > button {
+        background-color: #2563eb; /* Blue-600 */
+        color: #ffffff;
+        border: 1px solid transparent;
+        padding: 0.625rem 1.25rem;
+        font-size: 0.95rem;
+        font-weight: 500;
+        border-radius: 8px;
+        transition: background-color 0.15s ease;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .stButton > button:hover {
+        background-color: #1d4ed8; /* Blue-700 */
+        border-color: transparent;
+        color: #ffffff;
+    }
+    
+    .stButton > button:active {
+        background-color: #1e40af; /* Blue-800 */
+    }
+
+    /* 5. Inputs & Dropdowns (High Visibility) */
+    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
+        background-color: #ffffff;
+        color: #0f172a !important; /* Ensure text is dark and visible */
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 0.5rem;
+    }
+    
+    .stTextInput input:focus, .stTextArea textarea:focus, .stSelectbox div[data-baseweb="select"]:focus-within {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    }
+
+    /* Fix dropdown text visibility */
+    div[data-baseweb="select"] span {
+        color: #0f172a !important; /* Force dark text for selected option */
+    }
+    
+    /* Dropdown menu items */
+    ul[data-baseweb="menu"] li {
+        color: #0f172a !important;
+    }
+
+    /* 6. Sidebar styling */
     [data-testid="stSidebar"] {
-        background-color: #f8fafc;
+        background-color: #ffffff;
         border-right: 1px solid #e2e8f0;
     }
     
-    /* Badges */
-    .badge {
-        display: inline-block;
-        padding: 4px 12px;
-        background: #f0f0f0;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        color: #666;
-        margin-bottom: 10px;
+    [data-testid="stSidebar"] .css-17lntkn {
+        color: #475569;
     }
-    .badge.new {
-        background: #667eea;
-        color: white;
+
+    /* 7. Utilities */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        background-color: #f1f5f9; /* Slate-100 */
+        color: #475569; /* Slate-600 */
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 1rem;
+    }
+    
+    hr {
+        margin: 2rem 0;
+        border-color: #e2e8f0;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # Sidebar navigation
-st.sidebar.title("🚀 Navigation")
+st.sidebar.markdown("### 🧭 Navigation")
 tool = st.sidebar.radio(
-    "Select Tool:",
-    ["🏠 Home", "📊 DataAugmentor", "📁 File Comparison", "🔍 Code Review & Testing"]
+    "Go to:",
+    ["Home", "DataAugmentor", "File Comparison", "Code Review"],
+    label_visibility="collapsed"
 )
 
 # Check API key
-api_key_status = os.getenv("OPENROUTER_API_KEY")
-if not api_key_status:
-    st.sidebar.warning("⚠️ API Key not set! Set OPENROUTER_API_KEY in Streamlit secrets or environment.")
-else:
-    st.sidebar.success("✅ API Key configured")
+if not os.getenv("OPENROUTER_API_KEY"):
+    st.sidebar.error("⚠️ API Key missing")
 
 # HOME PAGE
-if tool == "🏠 Home":
-    st.markdown('<h1 class="main-header">🚀 DataAugmentor Suite</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="subtitle">Powerful AI tools for data manipulation, file comparison, and code review</p>', unsafe_allow_html=True)
+# HOME PAGE
+if tool == "Home":
+    st.markdown('<h1 class="main-header">DataAugmentor Suite</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">Secure, AI-powered tools for enterprise data operations</p>', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
         st.markdown("""
         <div class="tool-card">
-            <div class="card-top-border"></div>
-            <div style="font-size: 3rem; margin-bottom: 10px;">🤖</div>
-            <span class="badge new">AI-Powered</span>
+            <div class="card-icon">🤖</div>
+            <div class="badge">AI Core</div>
             <h3>DataAugmentor</h3>
-            <p style="color: #666; font-size: 0.95rem; margin-bottom: 20px;">
+            <p style="color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">
                 Generate synthetic data, augment datasets, mask PII, and create edge cases.
             </p>
-            <ul style="color: #555; padding-left: 20px; font-size: 0.9rem; margin-bottom: 20px;">
-                <li>Generate synthetic data</li>
-                <li>Augment existing data</li>
-                <li>Mask PII automatically</li>
-                <li>Generate edge cases</li>
-            </ul>
         </div>
         """, unsafe_allow_html=True)
+        if st.button("Open DataAugmentor", key="btn_da"):
+            st.session_state.tool = "DataAugmentor"
+            st.rerun()
     
     with col2:
         st.markdown("""
         <div class="tool-card">
-            <div class="card-top-border"></div>
-            <div style="font-size: 3rem; margin-bottom: 10px;">📊</div>
-            <span class="badge new">Analytics</span>
+            <div class="card-icon">📊</div>
+            <div class="badge">Analytics</div>
             <h3>File Comparison</h3>
-            <p style="color: #666; font-size: 0.95rem; margin-bottom: 20px;">
-                Compare files and identify differences with detailed statistics.
+            <p style="color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">
+                Compare files (CSV, TXT, JSON) and identify differences with precision.
             </p>
-            <ul style="color: #555; padding-left: 20px; font-size: 0.9rem; margin-bottom: 20px;">
-                <li>Compare CSV, TXT, JSON</li>
-                <li>Row-level comparison</li>
-                <li>Detailed statistics</li>
-                <li>Export differences</li>
-            </ul>
         </div>
         """, unsafe_allow_html=True)
+        if st.button("Open Comparison", key="btn_fc"):
+            st.session_state.tool = "File Comparison"
+            st.rerun()
     
     with col3:
         st.markdown("""
         <div class="tool-card">
-            <div class="card-top-border"></div>
-            <div style="font-size: 3rem; margin-bottom: 10px;">🔍</div>
-            <span class="badge new">DevTools</span>
+            <div class="card-icon">🔍</div>
+            <div class="badge">DevTools</div>
             <h3>Code Review</h3>
-            <p style="color: #666; font-size: 0.95rem; margin-bottom: 20px;">
-                AI-powered code analysis, test generation, and failure detection.
+            <p style="color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">
+                Automated code analysis, test generation, and failure scenario detection.
             </p>
-            <ul style="color: #555; padding-left: 20px; font-size: 0.9rem; margin-bottom: 20px;">
-                <li>Support 20+ languages</li>
-                <li>Automated code review</li>
-                <li>Generate unit tests</li>
-                <li>Failure scenarios</li>
-            </ul>
         </div>
         """, unsafe_allow_html=True)
-    
-    st.info("👈 Select a tool from the sidebar to get started!", icon="ℹ️")
+        if st.button("Open Code Review", key="btn_cr"):
+            st.session_state.tool = "Code Review"
+            st.rerun()
 
 # DATAAUGMENTOR
-elif tool == "📊 DataAugmentor":
-    st.title("📊 DataAugmentor")
+elif tool == "DataAugmentor":
+    st.markdown('<h2 class="main-header">DataAugmentor</h2>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">Generate, augment, and secure your data</p>', unsafe_allow_html=True)
     
     operation = st.selectbox(
         "Select Operation:",
@@ -348,8 +379,9 @@ elif tool == "📊 DataAugmentor":
                         st.error(f"Error: {str(e)}")
 
 # FILE COMPARISON
-elif tool == "📁 File Comparison":
-    st.title("📁 File Comparison")
+elif tool == "File Comparison":
+    st.markdown('<h2 class="main-header">File Comparison</h2>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">Compare datasets with precision</p>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     
@@ -377,38 +409,44 @@ elif tool == "📁 File Comparison":
                         st.warning("⚠️ Files are DIFFERENT")
                     
                     # Statistics
-                    st.subheader("📊 Statistics")
+                    st.markdown("### 📊 Statistics")
                     col1, col2, col3 = st.columns(3)
-                    col1.metric("Total in File 1", result['stats']['total_file1'])
-                    col2.metric("Total in File 2", result['stats']['total_file2'])
-                    col3.metric("Common Items", result['stats']['common'])
+                    with col1:
+                        st.metric("Total in File 1", result['stats']['total_file1'])
+                    with col2:
+                        st.metric("Total in File 2", result['stats']['total_file2'])
+                    with col3:
+                        st.metric("Common Items", result['stats']['common'])
                     
                     col4, col5 = st.columns(2)
-                    col4.metric("Only in File 1", result['stats']['only_in_file1'])
-                    col5.metric("Only in File 2", result['stats']['only_in_file2'])
+                    with col4:
+                        st.metric("Only in File 1", result['stats']['only_in_file1'])
+                    with col5:
+                        st.metric("Only in File 2", result['stats']['only_in_file2'])
                     
                     # Differences
                     if result['only_in_file1']:
                         with st.expander(f"📄 Only in {file1.name} ({len(result['only_in_file1'])} items)"):
                             for item in result['only_in_file1'][:50]:
-                                st.text(item)
+                                st.write(item)  # Use write for better formatting
                     
                     if result['only_in_file2']:
                         with st.expander(f"📄 Only in {file2.name} ({len(result['only_in_file2'])} items)"):
                             for item in result['only_in_file2'][:50]:
-                                st.text(item)
+                                st.write(item)
                     
                     if result['common']:
                         with st.expander(f"✅ Common Data ({len(result['common'])} items)"):
                             for item in result['common'][:50]:
-                                st.text(item)
+                                st.write(item)
                 
                 except Exception as e:
                     st.error(f"Error: {str(e)}")
 
 # CODE REVIEW
-elif tool == "🔍 Code Review & Testing":
-    st.title("🔍 Code Review & Testing Engine")
+elif tool == "Code Review":
+    st.markdown('<h2 class="main-header">Code Review & Testing</h2>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">AI-powered code quality assurance</p>', unsafe_allow_html=True)
     
     # Language selection
     languages = {

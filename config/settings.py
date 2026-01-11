@@ -107,6 +107,22 @@ FREE_MODELS_BY_USE_CASE = {
             "Good at effort estimation & breakdowns",
             "Stable long-context performance"
         ]
+
+
+    # ================================
+    # 5️⃣ Web Data Scraper
+    # ================================
+    "web_scraper": {
+        "default": "google/gemini-2.0-flash-exp:free",
+        "alternatives": [
+            "google/gemini-2.0-flash-thinking-exp:free"
+        ],
+        "why": [
+            "Massive context window (1M tokens) for HTML parsing",
+            "Excellent at converting unstructured text to JSON",
+            "Fast inference speed for real-time scraping",
+            "Free tier availability"
+        ]
     }
 }
 

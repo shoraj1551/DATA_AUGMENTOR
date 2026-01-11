@@ -53,13 +53,25 @@ def render():
             
             # 3. Parse Content
             st.write("📊 Parsing data...")
+            
+            # --- AI Extraction Logic ---
             try:
-                metadata = parser.extract_metadata(html)
+                # Always try basic table extraction first
                 tables = parser.extract_tables(html)
-                st.write(f"✅ Found {len(tables)} tables.")
+                metadata = parser.extract_metadata(html)
+                
+                ai_data = []
+                use_ai = st.toggle("Use AI to structure data?", value=True, help="Use Gemini 2.0 Flash to intelligently parse content into JSON")
+                
+                if use_ai:
+                    st.write("🤖 AI is analyzing content structure...")
+                    from web_scraper import ai_extractor
+                    ai_data = ai_extractor.extract_structured_data(html, url)
+                    st.write(f"✅ AI found {len(ai_data)} items.")
+                
             except Exception as e:
-                status.update(label="Parsing Failed", state="error")
-                st.error(f"Failed to parse content: {str(e)}")
+                status.update(label="Processing Failed", state="error")
+                st.error(f"Failed to process content: {str(e)}")
                 return
             
             status.update(label="Completed Successfully!", state="complete", expanded=False)
@@ -71,9 +83,28 @@ def render():
         st.subheader("Page Info")
         st.info(f"**Title**: {metadata['title']}\n\n**Description**: {metadata['description']}")
         
-        # Data Tables
+        # AI Result Display
+        if use_ai and ai_data:
+            st.subheader(f"🤖 AI Extracted Data ({len(ai_data)} items)")
+            
+            # Convert to DataFrame for easy view
+            ai_df = pd.DataFrame(ai_data)
+            st.dataframe(ai_df, use_container_width=True)
+            
+            # Download AI Data
+            json_str = json.dumps(ai_data, indent=2)
+            st.download_button(
+                label="📥 Download AI Data (JSON)",
+                data=json_str,
+                file_name="ai_scraped_data.json",
+                mime="application/json",
+                key="dl_ai"
+            )
+            st.divider()
+
+        # Regular Table Display
         if tables:
-            st.subheader(f"Extracted Datasets ({len(tables)})")
+            st.subheader(f"Raw HTML Tables ({len(tables)})")
             
             for i, df in enumerate(tables):
                 with st.expander(f"Dataset #{i+1} ({len(df)} rows)", expanded=(i==0)):

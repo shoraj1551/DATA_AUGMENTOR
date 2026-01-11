@@ -88,3 +88,34 @@ class PlansDB:
             self.save_plan(plan)
             return True
         return False
+
+    def update_task_stats(self, plan_id: str, task_id: str, updates: dict) -> bool:
+        """
+        Update specific fields of a task (status, actuals, comments)
+        
+        Args:
+            plan_id: ID of the plan
+            task_id: ID of the task to update
+            updates: Dictionary of fields to update (e.g. {"status": "in_progress", "actual_hours": 4})
+        """
+        plan = self.get_plan(plan_id)
+        if not plan:
+            return False
+            
+        found = False
+        for epic in plan.get("epics", []):
+            for story in epic.get("stories", []):
+                for task in story.get("tasks", []):
+                    if task.get("task_id") == task_id:
+                        # Update fields
+                        for key, value in updates.items():
+                             task[key] = value
+                        found = True
+                        break
+                if found: break
+            if found: break
+            
+        if found:
+            self.save_plan(plan)
+            return True
+        return False

@@ -9,7 +9,8 @@ def render():
     st.markdown('<h1 class="main-header">DataAugmentor Suite</h1>', unsafe_allow_html=True)
     st.markdown('<p class="subtitle">Secure, AI-powered tools for enterprise data operations</p>', unsafe_allow_html=True)
     
-    col1, col2 = st.columns(2)
+    # First row - 3 tools
+    col1, col2, col3 = st.columns(3)
     
     with col1:
         st.markdown("""
@@ -41,8 +42,6 @@ def render():
             st.session_state.tool = "File Comparison"
             st.rerun()
     
-    col3, col4 = st.columns(2)
-    
     with col3:
         st.markdown("""
         <div class="tool-card">
@@ -58,7 +57,10 @@ def render():
             st.session_state.tool = "Code Review"
             st.rerun()
     
-    with col4:
+    # Second row - 1 tool (centered)
+    col4, col5, col6 = st.columns([1, 2, 1])
+    
+    with col5:
         st.markdown("""
         <div class="tool-card">
             <div class="card-icon">🎯</div>

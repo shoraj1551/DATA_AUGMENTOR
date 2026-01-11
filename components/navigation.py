@@ -12,9 +12,11 @@ def initialize_session_state():
 
 def back_to_home(tool_name):
     """Render back to home button"""
-    if st.button("← Back to Home", key=f"back_{tool_name}", type="secondary", help="Return to Dashboard"):
-        st.session_state.tool = "Home"
-        st.rerun()
+    col1, col2, col3 = st.columns([1, 4, 1])
+    with col1:
+        if st.button("← Back to Home", key=f"back_{tool_name}", type="secondary", help="Return to Dashboard"):
+            st.session_state.tool = "Home"
+            st.rerun()
 
 
 def render_sidebar():

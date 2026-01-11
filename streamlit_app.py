@@ -170,11 +170,27 @@ st.markdown("""
 
 # Sidebar navigation
 st.sidebar.markdown("### 🧭 Navigation")
-tool = st.sidebar.radio(
+
+# Initialize session state for tool
+if "tool" not in st.session_state:
+    st.session_state.tool = "Home"
+
+# Update sidebar selection from session state logic (bi-directional sync)
+# We use a callback or carefully manage state to avoid conflicts
+selection = st.sidebar.radio(
     "Go to:",
     ["Home", "DataAugmentor", "File Comparison", "Code Review"],
-    label_visibility="collapsed"
+    index=["Home", "DataAugmentor", "File Comparison", "Code Review"].index(st.session_state.tool) if st.session_state.tool in ["Home", "DataAugmentor", "File Comparison", "Code Review"] else 0,
+    label_visibility="collapsed",
+    key="sidebar_tool_radio"
 )
+
+# Update session state when sidebar changes
+if selection != st.session_state.tool:
+    st.session_state.tool = selection
+    st.rerun()
+
+tool = st.session_state.tool
 
 # Check API key
 if not os.getenv("OPENROUTER_API_KEY"):

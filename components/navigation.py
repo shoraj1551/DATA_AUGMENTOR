@@ -13,6 +13,7 @@ def initialize_session_state():
 def go_to_tool(tool_name):
     """Navigate to a specific tool (callback)"""
     st.session_state.tool = tool_name
+    st.session_state.sidebar_tool_radio = tool_name
 
 
 def back_to_home(tool_name):

@@ -86,15 +86,17 @@ def render():
                         st.markdown("---")
                         st.markdown(f"### {plan['title']}")
                         st.markdown(f"*{plan['description']}*")
-                        st.markdown(f"**Status:** `{plan['status']}` | **Engineer Level:** `{plan['engineer_level']}`")
+                        st.markdown(f"**Status:** `{plan['status']}` | **Engineer Level:** `{plan['engineer_level']}` | **Total Est:** `{plan.get('estimated_total_days', 0)} Days`")
                         
                         # Display epics, stories, and tasks
                         for epic in plan['epics']:
-                            with st.expander(f"📦 **Epic:** {epic['title']}", expanded=True):
+                            epic_est = epic.get('estimated_days', 0)
+                            with st.expander(f"📦 **Epic:** {epic['title']} (Est: {epic_est} days)", expanded=True):
                                 st.markdown(f"*{epic['description']}*")
                                 
                                 for story in epic['stories']:
-                                    st.markdown(f"#### 📖 Story: {story['title']}")
+                                    story_est = story.get('estimated_hours', 0)
+                                    st.markdown(f"#### 📖 Story: {story['title']} <span style='background:#e2e8f0; color:#475569; padding:2px 8px; border-radius:12px; font-size:0.8em'>sc {story_est}h</span>", unsafe_allow_html=True)
                                     st.markdown(f"*{story['description']}*")
                                     
                                     if story.get('acceptance_criteria'):
@@ -105,7 +107,8 @@ def render():
                                     st.markdown("**Tasks:**")
                                     for task in story['tasks']:
                                         status_icon = "⬜" if task['status'] == "todo" else "✅"
-                                        st.markdown(f"{status_icon} {task['title']}")
+                                        task_est = task.get('estimated_hours', 0)
+                                        st.markdown(f"{status_icon} {task['title']} *({task_est}h)*")
                                     
                                     st.markdown("---")
                         
@@ -181,8 +184,8 @@ def render():
                                     {plan['status'].upper()}
                                 </span>
                                 <span style="margin-left: 1rem; color: #64748b; font-size: 0.85rem;">
-                                    📅 {plan['created_at'][:10]} | 👤 {plan['engineer_level']}
-                                </span>
+                                    📅 {plan['created_at'][:10]} | 👤 {plan['engineer_level']} | ⏱️ {plan.get('estimated_total_days', 0)} Days
+                                    </span>
                             </div>
                         </div>
                         """, unsafe_allow_html=True)

@@ -209,8 +209,6 @@ def render():
             else:
                 st.warning("Please provide a project description or upload a document.")
     
-    # TAB 2: MY PLANS
-    with tab2:
     # TAB 2: MY PLANS & EXECUTION BOARD
     with tab2:
         # Initialize View State

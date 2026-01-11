@@ -72,8 +72,8 @@ def render():
         st.markdown("""
         <div class="tool-card">
             <div class="card-icon">🌐</div>
-            <div class="badge">BETA</div>
-            <h3>Web Data Scraper</h3>
+            <div class="badge">Utility</div>
+            <h3>Web Data Scraper <span style="background:#2563eb; color:white; font-size:0.5em; vertical-align:middle; padding:2px 8px; border-radius:10px;">BETA</span></h3>
             <p style="color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">
                 Extract structured data, tables, and content from websites compliant with robots.txt.
             </p>

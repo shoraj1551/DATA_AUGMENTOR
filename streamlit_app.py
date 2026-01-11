@@ -798,7 +798,9 @@ elif tool == "Delivery Intelligence":
                                 st.rerun()
                     
                     except Exception as e:
+                        import traceback
                         st.error(f"Error generating plan: {str(e)}")
+                        st.error(f"Details: {traceback.format_exc()}")
             else:
                 st.warning("Please provide a project description or upload a document.")
     

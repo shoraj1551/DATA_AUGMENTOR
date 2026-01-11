@@ -26,32 +26,99 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Custom CSS matching Flask App
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* Gradient Headers */
     .main-header {
-        font-size: 3rem;
-        font-weight: bold;
+        font-size: 3.5rem;
+        font-weight: 700;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-align: center;
         padding: 1rem 0;
+        margin-bottom: 30px;
     }
+    
+    .subtitle {
+        text-align: center;
+        color: #666;
+        font-size: 1.2rem;
+        margin-bottom: 50px;
+    }
+
+    /* Card Styling */
     .tool-card {
-        padding: 1.5rem;
-        border-radius: 10px;
-        border: 2px solid #e0e0e0;
-        margin: 1rem 0;
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: 1px solid #f0f0f0;
+        height: 100%;
+        transition: transform 0.3s ease;
     }
-    .stButton>button {
-        width: 100%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    
+    .tool-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    .card-top-border {
+        height: 5px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        border-radius: 20px 20px 0 0;
+        margin: -30px -30px 20px -30px;
+    }
+
+    /* Buttons */
+    .stButton > button {
+        background-color: #2563eb;
         color: white;
+        border-radius: 6px;
         border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 5px;
-        font-weight: bold;
+        padding: 0.6rem 1.2rem;
+        font-weight: 600;
+        width: 100%;
+        transition: all 0.2s;
+    }
+    
+    .stButton > button:hover {
+        background-color: #1d4ed8;
+        transform: scale(1.02);
+    }
+
+    /* Inputs */
+    .stTextInput input, .stSelectbox div[data-baseweb="select"] {
+        border-radius: 6px;
+        border-color: #d1d5db;
+    }
+    
+    /* Sidebar */
+    [data-testid="stSidebar"] {
+        background-color: #f8fafc;
+        border-right: 1px solid #e2e8f0;
+    }
+    
+    /* Badges */
+    .badge {
+        display: inline-block;
+        padding: 4px 12px;
+        background: #f0f0f0;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        color: #666;
+        margin-bottom: 10px;
+    }
+    .badge.new {
+        background: #667eea;
+        color: white;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -73,32 +140,68 @@ else:
 # HOME PAGE
 if tool == "🏠 Home":
     st.markdown('<h1 class="main-header">🚀 DataAugmentor Suite</h1>', unsafe_allow_html=True)
-    st.markdown("### AI-Powered Data & Code Tools Platform")
+    st.markdown('<p class="subtitle">Powerful AI tools for data manipulation, file comparison, and code review</p>', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown("### 📊 DataAugmentor")
-        st.write("- Generate synthetic data")
-        st.write("- Augment existing datasets")
-        st.write("- Mask PII data")
-        st.write("- Generate edge cases")
+        st.markdown("""
+        <div class="tool-card">
+            <div class="card-top-border"></div>
+            <div style="font-size: 3rem; margin-bottom: 10px;">🤖</div>
+            <span class="badge new">AI-Powered</span>
+            <h3>DataAugmentor</h3>
+            <p style="color: #666; font-size: 0.95rem; margin-bottom: 20px;">
+                Generate synthetic data, augment datasets, mask PII, and create edge cases.
+            </p>
+            <ul style="color: #555; padding-left: 20px; font-size: 0.9rem; margin-bottom: 20px;">
+                <li>Generate synthetic data</li>
+                <li>Augment existing data</li>
+                <li>Mask PII automatically</li>
+                <li>Generate edge cases</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
-        st.markdown("### 📁 File Comparison")
-        st.write("- Compare CSV files")
-        st.write("- Compare TXT files")
-        st.write("- Compare JSON files")
-        st.write("- Detailed statistics")
+        st.markdown("""
+        <div class="tool-card">
+            <div class="card-top-border"></div>
+            <div style="font-size: 3rem; margin-bottom: 10px;">📊</div>
+            <span class="badge new">Analytics</span>
+            <h3>File Comparison</h3>
+            <p style="color: #666; font-size: 0.95rem; margin-bottom: 20px;">
+                Compare files and identify differences with detailed statistics.
+            </p>
+            <ul style="color: #555; padding-left: 20px; font-size: 0.9rem; margin-bottom: 20px;">
+                <li>Compare CSV, TXT, JSON</li>
+                <li>Row-level comparison</li>
+                <li>Detailed statistics</li>
+                <li>Export differences</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col3:
-        st.markdown("### 🔍 Code Review")
-        st.write("- 20+ languages supported")
-        st.write("- Automated code review")
-        st.write("- Generate unit tests")
-        st.write("- Failure scenarios")
+        st.markdown("""
+        <div class="tool-card">
+            <div class="card-top-border"></div>
+            <div style="font-size: 3rem; margin-bottom: 10px;">🔍</div>
+            <span class="badge new">DevTools</span>
+            <h3>Code Review</h3>
+            <p style="color: #666; font-size: 0.95rem; margin-bottom: 20px;">
+                AI-powered code analysis, test generation, and failure detection.
+            </p>
+            <ul style="color: #555; padding-left: 20px; font-size: 0.9rem; margin-bottom: 20px;">
+                <li>Support 20+ languages</li>
+                <li>Automated code review</li>
+                <li>Generate unit tests</li>
+                <li>Failure scenarios</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
     
-    st.info("👈 Select a tool from the sidebar to get started!")
+    st.info("👈 Select a tool from the sidebar to get started!", icon="ℹ️")
 
 # DATAAUGMENTOR
 elif tool == "📊 DataAugmentor":

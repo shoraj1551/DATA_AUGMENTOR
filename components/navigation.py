@@ -10,13 +10,16 @@ def initialize_session_state():
         st.session_state.tool = "Home"
 
 
+def go_to_tool(tool_name):
+    """Navigate to a specific tool (callback)"""
+    st.session_state.tool = tool_name
+
+
 def back_to_home(tool_name):
     """Render back to home button"""
     col1, col2, col3 = st.columns([1, 4, 1])
     with col1:
-        if st.button("← Back to Home", key=f"back_{tool_name}", type="secondary", help="Return to Dashboard"):
-            st.session_state.tool = "Home"
-            st.rerun()
+        st.button("← Back to Home", key=f"back_{tool_name}", type="secondary", help="Return to Dashboard", on_click=go_to_tool, args=("Home",))
 
 
 def render_sidebar():

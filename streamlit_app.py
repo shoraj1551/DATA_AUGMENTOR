@@ -179,20 +179,12 @@ def back_to_home(tool_name):
 
 # Sidebar navigation
 st.sidebar.markdown("### 🧭 Navigation")
-tool = st.sidebar.radio(
-    "Go to:",
-    ["Home", "DataAugmentor", "File Comparison", "Code Review"],
-    index=["Home", "DataAugmentor", "File Comparison", "Code Review"].index(st.session_state.tool) if st.session_state.tool in ["Home", "DataAugmentor", "File Comparison", "Code Review"] else 0,
-    label_visibility="collapsed",
-    key="sidebar_tool_radio"
-)
 
-# Initialize session state for tool
+# Initialize session state for tool FIRST (before accessing it)
 if "tool" not in st.session_state:
     st.session_state.tool = "Home"
 
 # Update sidebar selection from session state logic (bi-directional sync)
-# We use a callback or carefully manage state to avoid conflicts
 selection = st.sidebar.radio(
     "Go to:",
     ["Home", "DataAugmentor", "File Comparison", "Code Review"],

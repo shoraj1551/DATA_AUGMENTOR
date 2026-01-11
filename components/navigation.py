@@ -35,10 +35,9 @@ def render_sidebar():
         key="sidebar_tool_radio"
     )
     
-    # Update session state when sidebar changes
+    # Update session state when sidebar changes (but don't rerun - let the main loop handle it)
     if selection != st.session_state.tool:
         st.session_state.tool = selection
-        st.rerun()
     
     tool = st.session_state.tool
     

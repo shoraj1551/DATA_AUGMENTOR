@@ -15,6 +15,3 @@ def get_client():
             base_url=OPENROUTER_BASE_URL
         )
     return _client
-
-# For backward compatibility
-client = get_client()

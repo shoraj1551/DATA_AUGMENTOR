@@ -1,17 +1,26 @@
 import os
+from pathlib import Path
+
+# Load environment variables from .env file for local development
+try:
+    from dotenv import load_dotenv
+    env_path = Path(__file__).parent.parent / '.env'
+    load_dotenv(dotenv_path=env_path)
+except ImportError:
+    # python-dotenv not installed, skip
+    pass
 
 # OpenRouter API Configuration
-# Try to load from Streamlit secrets first (for Streamlit app)
-# Fall back to environment variable (for Flask app)
+# Priority: 1. .env file, 2. Streamlit secrets, 3. Environment variable
 try:
     import streamlit as st
-    OPENROUTER_API_KEY = st.secrets.get("OPENROUTER_API_KEY", os.getenv("OPENROUTER_API_KEY"))
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY") or st.secrets.get("OPENROUTER_API_KEY")
 except:
     # Not running in Streamlit, use environment variable
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 if not OPENROUTER_API_KEY:
-    print("WARNING: OPENROUTER_API_KEY not set. Please configure it in .streamlit/secrets.toml or environment variables.")
+    print("WARNING: OPENROUTER_API_KEY not set. Please configure it in .env, .streamlit/secrets.toml or environment variables.")
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 MODEL_NAME = "openai/gpt-4o-mini"

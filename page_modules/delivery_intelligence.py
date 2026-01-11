@@ -316,14 +316,14 @@ def render():
                                         
                                         with t_col1:
                                             # Status Dropdown
-                                            status_options = ["not_started", "in_progress", "code_review", "unit_testing", "completed", "blocked"]
+                                            status_options = ["not_started", "in_progress", "code_review", "unit_testing", "completed", "blocked", "verified_closed"]
                                             current_status = task.get('status', 'not_started')
                                             
                                             # Color code status
                                             status_dot = {
                                                 "not_started": "⚪", "in_progress": "🔵", 
                                                 "code_review": "🟡", "unit_testing": "🟠", 
-                                                "completed": "✅", "blocked": "🔴"
+                                                "completed": "✅", "blocked": "🔴", "verified_closed": "🔒"
                                             }.get(current_status, "⚪")
                                             
                                             new_status = st.selectbox(
@@ -337,7 +337,12 @@ def render():
                                         
                                         with t_col2:
                                             st.markdown(f"**{task['title']}**")
-                                            st.caption(f"Assigned: `{task.get('assignee_name', 'Unassigned')}`")
+                                            st.caption(f"👤 `{task.get('assignee_name', 'Unassigned')}`")
+                                            
+                                            # Dates Display
+                                            start_day = task.get('start_day_offset', 1)
+                                            duration = task.get('duration_days', 0.5)
+                                            st.caption(f"📅 Day {start_day} - {start_day + duration} (Est)")
                                         
                                         with t_col3:
                                             # Actual Hours Input
@@ -354,14 +359,30 @@ def render():
                                             st.caption(f"Est: {task.get('estimated_hours', 0)}h")
                                         
                                         with t_col5:
-                                            # Comment / Notes (Simplified)
-                                            notes = st.text_input(
-                                                "Notes",
-                                                value=task.get('comments', [{}])[-1].get('text', '') if task.get('comments') else "",
+                                            # Comment History & Add Note
+                                            comments = task.get('comments', [])
+                                            
+                                            if comments:
+                                                with st.popover(f"💬 {len(comments)}", use_container_width=False):
+                                                    for c in comments:
+                                                        st.markdown(f"**{c.get('user', 'User')}**: {c.get('text')}")
+                                                        st.caption(f"_{c.get('timestamp')}_")
+                                                        st.divider()
+                                            
+                                            # Add new note
+                                            new_note = st.text_input(
+                                                "Add",
                                                 key=f"note_{task['task_id']}",
-                                                placeholder="Add note...",
+                                                placeholder="...",
                                                 label_visibility="collapsed"
                                             )
+
+                                            # PM Close Button
+                                            if pm_mode and current_status == "completed":
+                                                if st.button("🔒", key=f"close_{task['task_id']}", help="PM: Verify & Close Task"):
+                                                    db.update_task_stats(plan['plan_id'], task['task_id'], {"status": "verified_closed"})
+                                                    st.toast(f"Task '{task['title']}' verified and closed!")
+                                                    st.rerun()
 
                                         # Update Logic
                                         updates = {}
@@ -371,26 +392,24 @@ def render():
                                         if actuals != task.get('actual_hours', 0):
                                             updates["actual_hours"] = actuals
                                             
-                                        # Check if notes changed
-                                        last_note = task.get('comments', [{}])[-1].get('text', '') if task.get('comments') else ""
-                                        if notes != last_note and notes.strip():
-                                            # Append new comment
-                                            current_comments = task.get('comments', [])
+                                        # Check if notes added
+                                        if new_note and new_note.strip():
+                                            from datetime import datetime
+                                            current_comments = list(task.get('comments', []))
                                             current_comments.append({
-                                                "user": "User", # Todo: get actual user
-                                                "text": notes,
-                                                "timestamp": "now"
+                                                "user": "PM" if pm_mode else "Engineer", 
+                                                "text": new_note,
+                                                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
                                             })
                                             updates["comments"] = current_comments
+                                            st.toast("Comment added")
+                                            # Auto-clear input by not saving it to session state? 
+                                            # Streamlit input clearing is tricky, usually requires rerun or key encoding.
+                                            # We will just save and rerun.
                                         
                                         if updates:
                                             db.update_task_stats(plan['plan_id'], task['task_id'], updates)
-                                            # We don't rerun immediately to allow bulk edits, but visual feedback is delayed. 
-                                            # For better UX, we might want to rerun, but it interrupts flow. 
-                                            # Let's rerun for status changes at least.
-                                            if "status" in updates: 
-                                                st.toast(f"Updated task: {task['title']}")
-                                                st.rerun()
+                                            st.rerun()
                                         
                                         st.markdown("---")
         else:

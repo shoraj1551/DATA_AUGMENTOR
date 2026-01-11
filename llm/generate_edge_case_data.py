@@ -2,7 +2,7 @@ from llm.client import get_client
 from utils.json_utils import parse_records
 from config.settings import MODEL_NAME
 
-def generate_edge_case_data(df, num_rows=10):
+def generate_edge_case_data(df, prompt="", num_rows=10):
     """
     Generate edge case data based on input schema.
     """
@@ -24,7 +24,11 @@ Mandatory format: {"records": [...]}"""
     user_prompt = f"""Input data sample: {str(data_sample)[:1000]}
 
 Generate exactly {num_rows} edge-case records with IDENTICAL schema.
-Return ONLY the JSON object with "records" field."""
+"""
+    if prompt:
+        user_prompt += f"Focus on these specific edge cases: {prompt}\n"
+
+    user_prompt += 'Return ONLY the JSON object with "records" field.'
 
     response = get_client().chat.completions.create(
         model=MODEL_NAME,

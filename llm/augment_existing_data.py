@@ -1,7 +1,7 @@
 from llm.client import get_client
 from utils.json_utils import parse_records
 from utils.cache import llm_cache
-from config.settings import MODEL_NAME
+from config.settings import get_model_for_feature
 
 
 @llm_cache.cached
@@ -38,7 +38,7 @@ Generate exactly {num_rows} new records with IDENTICAL schema.
 Return ONLY the JSON object with "records" field."""
 
     response = get_client().chat.completions.create(
-        model=MODEL_NAME,
+        model=get_model_for_feature("data_augmentor"),
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}

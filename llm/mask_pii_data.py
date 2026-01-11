@@ -1,7 +1,7 @@
 from llm.client import get_client
 from utils.json_utils import parse_records
 from utils.cache import llm_cache
-from config.settings import MODEL_NAME
+from config.settings import get_model_for_feature
 
 
 @llm_cache.cached
@@ -34,7 +34,7 @@ Columns to NOT mask (keep original): {exclude_columns_str}
 IMPORTANT: CHANGE the PII values! Return masked data in JSON format."""
 
     response = get_client().chat.completions.create(
-        model="openai/gpt-4o-mini",  # Using better model for instruction following
+        model=get_model_for_feature("data_augmentor"),
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}

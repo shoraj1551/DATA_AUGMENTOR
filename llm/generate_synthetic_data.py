@@ -3,7 +3,7 @@ import pandas as pd
 from llm.client import get_client
 from utils.json_utils import parse_records
 from utils.cache import llm_cache
-from config.settings import MODEL_NAME, DEFAULT_ROWS, MAX_ROWS
+from config.settings import get_model_for_feature, DEFAULT_ROWS, MAX_ROWS
 
 
 @llm_cache.cached
@@ -30,7 +30,7 @@ def _call_llm_for_synthetic_data(user_prompt: str):
     }}"""
 
     response = get_client().chat.completions.create(
-        model=MODEL_NAME,
+        model=get_model_for_feature("data_augmentor"),
         messages=[
             {"role": "system", "content": system_instruction},
             {"role": "user", "content": user_prompt}

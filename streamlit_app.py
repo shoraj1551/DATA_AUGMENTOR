@@ -26,83 +26,242 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Custom CSS - Minimalist & Professional Design System
 st.markdown("""
 <style>
+    /* 1. Global Typography & Reset */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #1e293b; /* Slate-800 for high contrast text */
+        background-color: #f8fafc; /* Very light slate background */
+    }
+
+    /* 2. Headers */
     .main-header {
-        font-size: 3rem;
-        font-weight: bold;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-align: center;
-        padding: 1rem 0;
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 2.5rem;
+        color: #0f172a; /* Slate-900 */
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
     }
+    
+    .subtitle {
+        font-size: 1.1rem;
+        color: #64748b; /* Slate-500 */
+        font-weight: 400;
+        margin-bottom: 3rem;
+    }
+    
+    h1, h2, h3 {
+        color: #0f172a;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+    }
+
+    /* 3. Cards (Minimalist) */
     .tool-card {
-        padding: 1.5rem;
-        border-radius: 10px;
-        border: 2px solid #e0e0e0;
-        margin: 1rem 0;
+        background: #ffffff;
+        border: 1px solid #e2e8f0; /* Slate-200 */
+        border-radius: 12px;
+        padding: 2rem;
+        height: 100%;
+        transition: all 0.2s ease-in-out;
     }
-    .stButton>button {
-        width: 100%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 5px;
-        font-weight: bold;
+
+    .tool-card:hover {
+        border-color: #cbd5e1; /* Slate-300 */
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        transform: translateY(-2px);
+    }
+    
+    .card-icon {
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+        background: #f1f5f9;
+        width: 3.5rem;
+        height: 3.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+    }
+
+    /* 4. Buttons (Professional Blue) */
+    .stButton > button {
+        background-color: #2563eb; /* Blue-600 */
+        color: #ffffff;
+        border: 1px solid transparent;
+        padding: 0.625rem 1.25rem;
+        font-size: 0.95rem;
+        font-weight: 500;
+        border-radius: 8px;
+        transition: background-color 0.15s ease;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .stButton > button:hover {
+        background-color: #1d4ed8; /* Blue-700 */
+        border-color: transparent;
+        color: #ffffff;
+    }
+    
+    .stButton > button:active {
+        background-color: #1e40af; /* Blue-800 */
+    }
+
+    /* 5. Inputs & Dropdowns (High Visibility) */
+    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
+        background-color: #ffffff;
+        color: #0f172a !important; /* Ensure text is dark and visible */
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 0.5rem;
+    }
+    
+    .stTextInput input:focus, .stTextArea textarea:focus, .stSelectbox div[data-baseweb="select"]:focus-within {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    }
+
+    /* Fix dropdown text visibility */
+    div[data-baseweb="select"] span {
+        color: #0f172a !important; /* Force dark text for selected option */
+    }
+    
+    /* Dropdown menu items */
+    ul[data-baseweb="menu"] li {
+        color: #0f172a !important;
+    }
+
+    /* 6. Sidebar styling */
+    [data-testid="stSidebar"] {
+        background-color: #ffffff;
+        border-right: 1px solid #e2e8f0;
+    }
+    
+    [data-testid="stSidebar"] .css-17lntkn {
+        color: #475569;
+    }
+
+    /* 8. Back Button */
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
+        color: #64748b;
+        font-weight: 500;
+        font-size: 0.9rem;
+        margin-bottom: 20px;
+        cursor: pointer;
+        border: 1px solid #e2e8f0;
+        padding: 5px 12px;
+        border-radius: 6px;
+        background: white;
+        transition: all 0.2s;
+    }
+    
+    .back-btn:hover {
+        background: #f8fafc;
+        color: #2563eb;
+        border-color: #cbd5e1;
     }
 </style>
 """, unsafe_allow_html=True)
 
+# Helper function for back button
+def back_to_home(tool_name):
+    if st.button("← Back to Home", key=f"back_{tool_name}", type="secondary", help="Return to Dashboard"):
+        st.session_state.tool = "Home"
+        st.rerun()
+
 # Sidebar navigation
-st.sidebar.title("🚀 Navigation")
-tool = st.sidebar.radio(
-    "Select Tool:",
-    ["🏠 Home", "📊 DataAugmentor", "📁 File Comparison", "🔍 Code Review & Testing"]
+st.sidebar.markdown("### 🧭 Navigation")
+
+# Initialize session state for tool FIRST (before accessing it)
+if "tool" not in st.session_state:
+    st.session_state.tool = "Home"
+
+# Update sidebar selection from session state logic (bi-directional sync)
+selection = st.sidebar.radio(
+    "Go to:",
+    ["Home", "DataAugmentor", "File Comparison", "Code Review"],
+    index=["Home", "DataAugmentor", "File Comparison", "Code Review"].index(st.session_state.tool) if st.session_state.tool in ["Home", "DataAugmentor", "File Comparison", "Code Review"] else 0,
+    label_visibility="collapsed",
+    key="sidebar_tool_radio"
 )
 
+# Update session state when sidebar changes
+if selection != st.session_state.tool:
+    st.session_state.tool = selection
+    st.rerun()
+
+tool = st.session_state.tool
+
 # Check API key
-api_key_status = os.getenv("OPENROUTER_API_KEY")
-if not api_key_status:
-    st.sidebar.warning("⚠️ API Key not set! Set OPENROUTER_API_KEY in Streamlit secrets or environment.")
-else:
-    st.sidebar.success("✅ API Key configured")
+if not os.getenv("OPENROUTER_API_KEY"):
+    st.sidebar.error("⚠️ API Key missing")
 
 # HOME PAGE
-if tool == "🏠 Home":
-    st.markdown('<h1 class="main-header">🚀 DataAugmentor Suite</h1>', unsafe_allow_html=True)
-    st.markdown("### AI-Powered Data & Code Tools Platform")
+# HOME PAGE
+if tool == "Home":
+    st.markdown('<h1 class="main-header">DataAugmentor Suite</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">Secure, AI-powered tools for enterprise data operations</p>', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown("### 📊 DataAugmentor")
-        st.write("- Generate synthetic data")
-        st.write("- Augment existing datasets")
-        st.write("- Mask PII data")
-        st.write("- Generate edge cases")
+        st.markdown("""
+        <div class="tool-card">
+            <div class="card-icon">🤖</div>
+            <div class="badge">AI Core</div>
+            <h3>DataAugmentor</h3>
+            <p style="color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">
+                Generate synthetic data, augment datasets, mask PII, and create edge cases.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("Open DataAugmentor", key="btn_da"):
+            st.session_state.tool = "DataAugmentor"
+            st.rerun()
     
     with col2:
-        st.markdown("### 📁 File Comparison")
-        st.write("- Compare CSV files")
-        st.write("- Compare TXT files")
-        st.write("- Compare JSON files")
-        st.write("- Detailed statistics")
+        st.markdown("""
+        <div class="tool-card">
+            <div class="card-icon">📊</div>
+            <div class="badge">Analytics</div>
+            <h3>File Comparison</h3>
+            <p style="color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">
+                Compare files (CSV, TXT, JSON) and identify differences with precision.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("Open Comparison", key="btn_fc"):
+            st.session_state.tool = "File Comparison"
+            st.rerun()
     
     with col3:
-        st.markdown("### 🔍 Code Review")
-        st.write("- 20+ languages supported")
-        st.write("- Automated code review")
-        st.write("- Generate unit tests")
-        st.write("- Failure scenarios")
-    
-    st.info("👈 Select a tool from the sidebar to get started!")
+        st.markdown("""
+        <div class="tool-card">
+            <div class="card-icon">🔍</div>
+            <div class="badge">DevTools</div>
+            <h3>Code Review</h3>
+            <p style="color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">
+                Automated code analysis, test generation, and failure scenario detection.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("Open Code Review", key="btn_cr"):
+            st.session_state.tool = "Code Review"
+            st.rerun()
 
 # DATAAUGMENTOR
-elif tool == "📊 DataAugmentor":
-    st.title("📊 DataAugmentor")
+elif tool == "DataAugmentor":
+    back_to_home("DataAugmentor")
+    st.markdown('<h2 class="main-header">DataAugmentor</h2>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">Generate, augment, and secure your data</p>', unsafe_allow_html=True)
     
     operation = st.selectbox(
         "Select Operation:",
@@ -245,8 +404,10 @@ elif tool == "📊 DataAugmentor":
                         st.error(f"Error: {str(e)}")
 
 # FILE COMPARISON
-elif tool == "📁 File Comparison":
-    st.title("📁 File Comparison")
+elif tool == "File Comparison":
+    back_to_home("FileComparison")
+    st.markdown('<h2 class="main-header">File Comparison</h2>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">Compare datasets with precision</p>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     
@@ -274,38 +435,45 @@ elif tool == "📁 File Comparison":
                         st.warning("⚠️ Files are DIFFERENT")
                     
                     # Statistics
-                    st.subheader("📊 Statistics")
+                    st.markdown("### 📊 Statistics")
                     col1, col2, col3 = st.columns(3)
-                    col1.metric("Total in File 1", result['stats']['total_file1'])
-                    col2.metric("Total in File 2", result['stats']['total_file2'])
-                    col3.metric("Common Items", result['stats']['common'])
+                    with col1:
+                        st.metric("Total in File 1", result['stats']['total_file1'])
+                    with col2:
+                        st.metric("Total in File 2", result['stats']['total_file2'])
+                    with col3:
+                        st.metric("Common Items", result['stats']['common'])
                     
                     col4, col5 = st.columns(2)
-                    col4.metric("Only in File 1", result['stats']['only_in_file1'])
-                    col5.metric("Only in File 2", result['stats']['only_in_file2'])
+                    with col4:
+                        st.metric("Only in File 1", result['stats']['only_in_file1'])
+                    with col5:
+                        st.metric("Only in File 2", result['stats']['only_in_file2'])
                     
                     # Differences
                     if result['only_in_file1']:
                         with st.expander(f"📄 Only in {file1.name} ({len(result['only_in_file1'])} items)"):
                             for item in result['only_in_file1'][:50]:
-                                st.text(item)
+                                st.write(item)  # Use write for better formatting
                     
                     if result['only_in_file2']:
                         with st.expander(f"📄 Only in {file2.name} ({len(result['only_in_file2'])} items)"):
                             for item in result['only_in_file2'][:50]:
-                                st.text(item)
+                                st.write(item)
                     
                     if result['common']:
                         with st.expander(f"✅ Common Data ({len(result['common'])} items)"):
                             for item in result['common'][:50]:
-                                st.text(item)
+                                st.write(item)
                 
                 except Exception as e:
                     st.error(f"Error: {str(e)}")
 
 # CODE REVIEW
-elif tool == "🔍 Code Review & Testing":
-    st.title("🔍 Code Review & Testing Engine")
+elif tool == "Code Review":
+    back_to_home("CodeReview")
+    st.markdown('<h2 class="main-header">Code Review & Testing</h2>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">AI-powered code quality assurance</p>', unsafe_allow_html=True)
     
     # Language selection
     languages = {

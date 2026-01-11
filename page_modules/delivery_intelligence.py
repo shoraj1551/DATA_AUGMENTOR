@@ -28,11 +28,21 @@ def calculate_progress(plan):
 def render():
     """Render the Delivery Intelligence page"""
     back_to_home("DeliveryIntelligence")
-    st.markdown('<h2 class="main-header">Delivery Intelligence</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="main-header">Delivery Intelligence <span style="background:#2563eb; color:white; font-size:0.4em; vertical-align:middle; padding:2px 8px; border-radius:10px;">BETA</span></h2>', unsafe_allow_html=True)
     st.markdown('<p class="subtitle">AI-assisted execution planning for data & platform teams</p>', unsafe_allow_html=True)
     
     # Initialize database
     db = PlansDB()
+    
+    # Sidebar - PM Mode Toggle
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("⚙️ Admin Controls")
+    pm_mode = st.sidebar.toggle("View as PM (Approver)", value=False)
+    
+    if pm_mode:
+        st.sidebar.info("Signed in as: **Product Manager**")
+    else:
+        st.sidebar.info("Signed in as: **Engineer**")
     
     # Tab navigation
     tab1, tab2, tab3 = st.tabs(["📝 Create Plan", "📋 My Plans", "📊 Dashboard"])
@@ -122,7 +132,8 @@ def render():
                                     
                                     st.markdown("**Tasks:**")
                                     for task in story['tasks']:
-                                        status_icon = "⬜" if task['status'] == "todo" else "✅"
+                                        is_done = task['status'] == 'done'
+                                        status_icon = "✅" if is_done else "⬜"
                                         task_est = task.get('estimated_hours', 0)
                                         st.markdown(f"{status_icon} {task['title']} *({task_est}h)*")
                                     
@@ -214,9 +225,46 @@ def render():
                         """, unsafe_allow_html=True)
                     
                     with col_actions:
-                        if st.button("View", key=f"view_{plan['plan_id']}"):
-                            st.session_state.selected_plan = plan['plan_id']
-                            st.info(f"Plan details view coming in Phase 4! Plan ID: {plan['plan_id'][:8]}")
+                        # PM Approval Workflow
+                        if pm_mode and plan['status'] == 'pending_approval':
+                            if st.button("✅ Approve", key=f"app_{plan['plan_id']}", type="primary"):
+                                db.update_plan_status(plan['plan_id'], "in_progress")
+                                st.success(f"Plan '{plan['title']}' approved!")
+                                st.rerun()
+                                
+                            if st.button("❌ Reject", key=f"rej_{plan['plan_id']}"):
+                                db.update_plan_status(plan['plan_id'], "draft")
+                                st.warning(f"Plan '{plan['title']}' rejected (sent back to draft).")
+                                st.rerun()
+
+                        # View / Edit Details and Task Management
+                        with st.expander("Show Details & Tasks"):
+                             for epic in plan.get('epics', []):
+                                st.markdown(f"**{epic['title']}**")
+                                for story in epic.get('stories', []):
+                                    st.markdown(f"&nbsp;&nbsp;*Story: {story['title']}*")
+                                    for task in story.get('tasks', []):
+                                        # Task checkbox (Interactive only if In Progress)
+                                        task_key = f"task_{task['task_id']}"
+                                        is_completed = task['status'] == 'done'
+                                        
+                                        # Only allow checking if plan is in progress
+                                        disabled = plan['status'] != 'in_progress'
+                                        
+                                        new_status = st.checkbox(
+                                            f"{task['title']} ({task.get('estimated_hours',0)}h)", 
+                                            value=is_completed, 
+                                            key=task_key,
+                                            disabled=disabled
+                                        )
+                                        
+                                        # Handle status change
+                                        if not disabled and new_status != is_completed:
+                                            # Update task status in memory plan object
+                                            task['status'] = 'done' if new_status else 'todo'
+                                            # Save updated plan to DB
+                                            db.save_plan(plan)
+                                            st.rerun()
         else:
             st.info("No plans found. Create your first plan in the 'Create Plan' tab!")
     

@@ -16,7 +16,7 @@ def back_to_home(tool_name):
     with col1:
         if st.button("← Back to Home", key=f"back_{tool_name}", type="secondary", help="Return to Dashboard"):
             st.session_state.tool = "Home"
-            st.experimental_rerun()
+            st.rerun()
 
 
 def render_sidebar():

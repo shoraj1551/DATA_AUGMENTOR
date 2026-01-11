@@ -25,7 +25,7 @@ def render():
         """, unsafe_allow_html=True)
         if st.button("Open DataAugmentor", key="btn_da", use_container_width=True):
             st.session_state.tool = "DataAugmentor"
-            st.experimental_rerun()
+            st.rerun()
     
     with col2:
         st.markdown("""
@@ -40,7 +40,7 @@ def render():
         """, unsafe_allow_html=True)
         if st.button("Open Comparison", key="btn_fc", use_container_width=True):
             st.session_state.tool = "File Comparison"
-            st.experimental_rerun()
+            st.rerun()
     
     with col3:
         st.markdown("""
@@ -55,7 +55,7 @@ def render():
         """, unsafe_allow_html=True)
         if st.button("Open Code Review", key="btn_cr", use_container_width=True):
             st.session_state.tool = "Code Review"
-            st.experimental_rerun()
+            st.rerun()
     
     # Second row - Delivery Intelligence aligned under first column
     col4, col5, col6 = st.columns(3)
@@ -73,4 +73,4 @@ def render():
         """, unsafe_allow_html=True)
         if st.button("Open Delivery Intelligence", key="btn_di", use_container_width=True):
             st.session_state.tool = "Delivery Intelligence"
-            st.experimental_rerun()
+            st.rerun()

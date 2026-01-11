@@ -9,6 +9,22 @@ from delivery_intelligence.llm.plan_generator import generate_execution_plan
 from delivery_intelligence.storage.plans_db import PlansDB
 
 
+def calculate_progress(plan):
+    """Calculate progress percentage of a plan"""
+    total_tasks = 0
+    completed_tasks = 0
+    
+    for epic in plan.get('epics', []):
+        for story in epic.get('stories', []):
+            tasks = story.get('tasks', [])
+            total_tasks += len(tasks)
+            completed_tasks += len([t for t in tasks if t.get('status') == 'done'])
+            
+    if total_tasks == 0:
+        return 0
+    return int((completed_tasks / total_tasks) * 100)
+
+
 def render():
     """Render the Delivery Intelligence page"""
     back_to_home("DeliveryIntelligence")
@@ -169,6 +185,7 @@ def render():
                     "in_progress": "#3b82f6",
                     "completed": "#6366f1"
                 }
+                progress = calculate_progress(plan)
                 status_color = status_colors.get(plan['status'], "#64748b")
                 
                 with st.container():
@@ -185,7 +202,13 @@ def render():
                                 </span>
                                 <span style="margin-left: 1rem; color: #64748b; font-size: 0.85rem;">
                                     📅 {plan['created_at'][:10]} | 👤 {plan['engineer_level']} | ⏱️ {plan.get('estimated_total_days', 0)} Days
-                                    </span>
+                                </span>
+                                <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 10px;">
+                                    <div style="flex-grow: 1; background-color: #e2e8f0; height: 8px; border-radius: 4px;">
+                                        <div style="width: {progress}%; background-color: {status_color}; height: 8px; border-radius: 4px;"></div>
+                                    </div>
+                                    <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">{progress}%</span>
+                                </div>
                             </div>
                         </div>
                         """, unsafe_allow_html=True)

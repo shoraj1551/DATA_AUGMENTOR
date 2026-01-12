@@ -92,9 +92,9 @@ def suggest_website_source(requirements):
     except:
         search_query = requirements # Fallback
 
-    # --- Step 2: Perform Real Web Search ---
-    # This gets real URLs and snippets from DuckDuckGo
-    search_context = get_formatted_search_results(search_query)
+    # --- Step 2: Perform Real Web Search (Smart Mode) ---
+    # This uses multiple fallback queries to ensure results
+    search_context = get_formatted_search_results(requirements, search_query)
 
     # --- Step 3: Synthesize & Select ---
     system_prompt = """You are a clever Research Agent.
@@ -102,17 +102,18 @@ You have been given a list of REAL-TIME SEARCH RESULTS.
 Your job is to select the Top 3 BEST sources from the results to satisfy the user's data requirement.
 
 RULES:
-1. **Factuality**: ONLY suggest URLs represented in the Search Results. Do not hallucinate new ones.
-2. **Prioritization**: Prefer 'List' or 'Database' type pages over news articles.
-3. **Blocking**: If a known blocked site (LinkedIn/Twitter) appears and is relevant, include it but mark as likely restricted.
+1. **Factuality**: ONLY suggest URLs represented in the Search Results.
+2. **Never Empty**: If no direct data source is found, return the generic Search Engine URLs (Google/Bing) from the context as suggestions, telling the user to search manually.
+3. **Prioritization**: Prefer 'List' or 'Database' type pages over news.
+4. **Blocking**: If a known blocked site appears and is relevant, include it but mark as blocked.
 
 JSON FORMAT (List of objects):
 {
   "suggestions": [
     {
-      "url": "https://actual-link-from-results...",
-      "reason": "Contains a comprehensive table of...",
-      "access_tips": "Static HTML, easy to scrape" 
+      "url": "https://...",
+      "reason": "Why this is good...",
+      "access_tips": "..." 
     }
   ]
 }"""
@@ -120,7 +121,7 @@ JSON FORMAT (List of objects):
     user_prompt = f"""
     User Requirement: {requirements}
     
-    Used Search Query: {search_query}
+    Used Search Queries: {search_query} (and fallbacks)
     
     {search_context}
     

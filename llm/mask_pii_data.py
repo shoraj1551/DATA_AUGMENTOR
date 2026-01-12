@@ -22,13 +22,18 @@ def _call_llm_for_pii_masking(data_json: str, exclude_columns_str: str, masking_
 CRITICAL: You MUST change the PII values to masked versions. DO NOT return original values!
 
 PII columns to MASK (change these values):
+------------------------------------------------
 {masking_rules}
+------------------------------------------------
 
 EXAMPLE:
 Input: {{"Age": 35, "Income": 75000, "Score": 720}}
 Output: {{"Age": 42, "Income": "XXXXX", "Score": 720}}
 
-Return JSON: {{"records": [...]}}"""
+CRITICAL OUTPUT INSTRUCTION:
+You MUST return the result in valid JSON format with a single key 'records'.
+Structure: {{"records": [ ...rows... ]}}
+Do NOT return Markdown blocks, explanations, or CSV. Just the raw JSON string."""
 
     user_prompt = f"""Mask PII in this data: {data_json[:2000]}
 

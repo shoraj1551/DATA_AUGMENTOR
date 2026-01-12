@@ -344,23 +344,23 @@ def render():
                             with t5:
                                 # Comment & PM Verify
                                 comments = task.get('comments', [])
-                                if st.button(f"💬 {len(comments)}", key=f"chat_{task['task_id']}"): # Popover simulation
-                                     # Note: Streamlit buttons just trigger rerun, but we want popover. 
-                                     # Let's use actual popover if available or expander. 
-                                     # Retrying with native popover for consistency with previous step.
-                                     pass 
                                 
-                                # Use popover for comments
-                                with st.popover(f"💬 {len(comments)}"):
-                                    for c in comments:
-                                        st.markdown(f"**{c.get('user', 'User')}**: {c.get('text')}")
-                                        st.divider()
-                                    new_note = st.text_input("Add Note", key=f"note_{task['task_id']}")
-                                    if new_note:
-                                        # Save logic handled below via change detection
-                                        # But text_input inside popover might be tricky for state. 
-                                        # Reverting to direct field outside? No, let's keep inline.
-                                        pass
+                                # Use popover for comments (with fallback for older Streamlit versions)
+                                try:
+                                    with st.popover(f"💬 {len(comments)}"):
+                                        if comments:
+                                            for c in comments:
+                                                st.markdown(f"**{c.get('user', 'User')}**: {c.get('text')}")
+                                                st.caption(c.get('timestamp', ''))
+                                                st.divider()
+                                        else:
+                                            st.caption("No comments yet")
+                                        
+                                        new_note = st.text_input("Add Note", key=f"note_{task['task_id']}", placeholder="Type and press Enter...")
+                                except AttributeError:
+                                    # Fallback for older Streamlit versions without popover
+                                    if st.button(f"💬 {len(comments)}", key=f"chat_{task['task_id']}"):
+                                        st.info("Comments feature requires Streamlit 1.30+")
 
                                 if pm_mode and current_status == "completed":
                                      if st.button("🔒", key=f"lock_{task['task_id']}", help="Verify"):

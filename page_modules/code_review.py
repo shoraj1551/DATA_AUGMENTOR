@@ -135,23 +135,49 @@ def render():
                     with st.spinner("Reviewing code..."):
                         try:
                             review_json = review_code_with_llm(code, language, uploaded_file.name)
-                            review = json.loads(review_json)
                             
-                            if review.get('issues'):
-                                for issue in review['issues']:
-                                    severity = issue.get('severity', 'low')
-                                    if severity == 'high':
-                                        st.error(f"**Line {issue.get('line', 'N/A')}**: {issue.get('message')}")
-                                    elif severity == 'medium':
-                                        st.warning(f"**Line {issue.get('line', 'N/A')}**: {issue.get('message')}")
-                                    else:
-                                        st.info(f"**Line {issue.get('line', 'N/A')}**: {issue.get('message')}")
-                                    st.write(f"💡 **Suggestion:** {issue.get('suggestion')}")
-                                    st.divider()
+                            if not review_json:
+                                st.error("Received empty response from LLM")
                             else:
-                                st.success("✅ No major issues found!")
+                                try:
+                                    review = json.loads(review_json)
+                                except json.JSONDecodeError:
+                                    # Fallback if LLM returns text instead of JSON
+                                    st.warning("LLM returned raw text instead of structured JSON")
+                                    st.write(review_json)
+                                    review = {}
+
+                                issues = review.get('issues', [])
+                                if issues and isinstance(issues, list):
+                                    for issue in issues:
+                                        if isinstance(issue, dict):
+                                            line = str(issue.get('line', 'N/A'))
+                                            message = str(issue.get('message', 'No description'))
+                                            suggestion = str(issue.get('suggestion', 'No suggestion'))
+                                            severity = str(issue.get('severity', 'low')).lower()
+                                            
+                                            display_text = f"**Line {line}**: {message}"
+                                            
+                                            if severity == 'high':
+                                                st.error(display_text)
+                                            elif severity == 'medium':
+                                                st.warning(display_text)
+                                            else:
+                                                st.info(display_text)
+                                                
+                                            st.markdown(f"💡 **Suggestion:** {suggestion}")
+                                            st.divider()
+                                        else:
+                                            st.warning(f"Unstructured issue: {str(issue)}")
+                                else:
+                                    if review: # If we parsed generic JSON but no issues
+                                        st.success("✅ No major issues found!")
                         except Exception as e:
-                            st.error(f"Error: {str(e)}")
+                            st.error(f"Error during analysis: {str(e)}")
+                            # Log the raw response for debugging if possible
+                            if 'review_json' in locals():
+                                with st.expander("Debug Raw Response"):
+                                    st.code(review_json)
                 else:
                     st.info("Code review not requested")
             
@@ -161,8 +187,11 @@ def render():
                     with st.spinner("Generating unit tests..."):
                         try:
                             tests = generate_unit_tests_with_llm(code, language, structure['test_framework'])
-                            st.code(tests, language=language)
-                            st.download_button("📥 Download Tests", tests, f"test_{uploaded_file.name}")
+                            if tests:
+                                st.code(tests, language=language)
+                                st.download_button("📥 Download Tests", str(tests), f"test_{uploaded_file.name}")
+                            else:
+                                st.warning("No tests generated.")
                         except Exception as e:
                             st.error(f"Error: {str(e)}")
                 else:
@@ -174,8 +203,11 @@ def render():
                     with st.spinner("Generating functional tests..."):
                         try:
                             tests = generate_functional_tests_with_llm(code, language, structure['test_framework'])
-                            st.code(tests, language=language)
-                            st.download_button("📥 Download Tests", tests, f"functional_test_{uploaded_file.name}")
+                            if tests:
+                                st.code(tests, language=language)
+                                st.download_button("📥 Download Tests", str(tests), f"functional_test_{uploaded_file.name}")
+                            else:
+                                st.warning("No functional tests generated.")
                         except Exception as e:
                             st.error(f"Error: {str(e)}")
                 else:

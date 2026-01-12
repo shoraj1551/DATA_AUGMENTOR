@@ -57,18 +57,16 @@ def generate_unit_tests_with_llm(code: str, language: str, test_framework: str) 
     """
     system_prompt = f"""You are an expert test engineer for {language}.
 
-Generate comprehensive unit tests using {test_framework}.
+Generate comprehensive UNIT tests using {test_framework}.
 
 Requirements:
-- Test all functions
-- Include edge cases
-- Test boundary conditions
+- ISOLATE functions (mock external dependencies/DBs/APIs)
+- Test individual functions in isolation
+- Include edge cases and boundary conditions
 - Add negative test cases
-- Use proper assertions
+- Return ONLY the test code, no explanations."""
 
-Return ONLY the test code, no explanations."""
-
-    user_prompt = f"""Generate {test_framework} unit tests for this {language} code:
+    user_prompt = f"""Generate {test_framework} UNIT tests for this {language} code:
 
 ```{language}
 {code[:5000]}
@@ -94,17 +92,16 @@ def generate_functional_tests_with_llm(code: str, language: str, test_framework:
     """
     system_prompt = f"""You are an expert test engineer for {language}.
 
-Generate functional/integration tests using {test_framework}.
+Generate FUNCTIONAL/INTEGRATION tests using {test_framework}.
 
-Focus on:
-- Component interactions
-- End-to-end workflows
-- Integration scenarios
-- API testing (if applicable)
+Requirements:
+- Focus on WORKFLOWS and interactions between components
+- Do NOT mock internal logic; test the real flow
+- Test end-to-end scenarios (e.g. valid input -> process -> output)
+- Test integration points
+- Return ONLY the test code, no explanations."""
 
-Return ONLY the test code."""
-
-    user_prompt = f"""Generate {test_framework} functional tests for this {language} code:
+    user_prompt = f"""Generate {test_framework} FUNCTIONAL tests for this {language} code:
 
 ```{language}
 {code[:5000]}
@@ -130,24 +127,26 @@ def generate_failure_scenarios_with_llm(code: str, language: str) -> str:
     """
     system_prompt = f"""You are a security and QA expert for {language}.
 
-Generate failure scenarios that could break this code:
+Generate the TOP 5 failure scenarios that could break this code.
+Focus on:
 - Edge case inputs
 - Boundary values
 - Invalid types
 - Malformed data
 - Security attack vectors
 
-Return JSON:
+Return JSON with this EXACT structure:
 {{
   "scenarios": [
     {{
-      "function": "function_name",
-      "input": "test input",
-      "reason": "why this might fail",
-      "expected": "expected behavior"
+      "function": "target_function_name",
+      "input": "specific input to test",
+      "reason": "why this causes failure",
+      "expected": "expected exception or behavior"
     }}
   ]
 }}"""
+
 
     user_prompt = f"""Generate failure scenarios for this {language} code:
 

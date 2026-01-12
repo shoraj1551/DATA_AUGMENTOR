@@ -77,9 +77,10 @@ FREE_MODELS_BY_USE_CASE = {
     # 3️⃣ Code Review
     # ================================
     "code_review": {
-        "default": "mistralai/mistral-7b-instruct",
+        "default": "meta-llama/llama-3.1-8b-instruct",
         "alternatives": [
-            "qwen/qwen-2.5-7b-instruct"
+            "qwen/qwen-2.5-7b-instruct",
+            "mistralai/mistral-7b-instruct"
         ],
         "why": [
             "Trained heavily on code",

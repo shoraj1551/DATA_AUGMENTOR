@@ -82,7 +82,16 @@ def render():
             st.write("")
             scrape_btn = st.button("🚀 Check & Scrape", type="primary", use_container_width=True)
     
-    if scrape_btn and url:
+    # Initialize force_scrape state
+    if "force_scrape" not in st.session_state:
+        st.session_state.force_scrape = False
+
+    # Reset force_scrape if new scrape initiated
+    if scrape_btn:
+        st.session_state.force_scrape = False
+
+    # Process if Scrape Button click OR Force Scrape is active
+    if (scrape_btn or st.session_state.force_scrape) and url:
         if not url.startswith("http"):
             st.error("Please enter a valid URL starting with http:// or https://")
             return
@@ -93,10 +102,17 @@ def render():
             is_allowed = validator.is_scraping_allowed(url)
             
             if not is_allowed:
-                status.update(label="Scraping Disallowed", state="error")
-                st.error(f"🛑 Scraping is disallowed by the website's robots.txt policy for this URL.")
-                st.info("We respect website policies to ensure ethical scraping.")
-                return
+                if st.session_state.force_scrape:
+                    st.warning("⚠️ Bypassing robots.txt restrictions as requested.")
+                else:
+                    status.update(label="Scraping Disallowed", state="error")
+                    st.error(f"🛑 Scraping is disallowed by the website's robots.txt policy for this URL.")
+                    st.info("We respect website policies, but you can override this manually.")
+                    
+                    if st.button("⚠️ Bypass & Scrape Anyway", type="primary"):
+                        st.session_state.force_scrape = True
+                        st.rerun()
+                    return
             
             st.write("✅ Compliance check passed.")
             

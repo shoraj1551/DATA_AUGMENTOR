@@ -40,10 +40,6 @@ if not OPENROUTER_API_KEY:
         "Set it in .streamlit/secrets.toml or as an environment variable."
     )
 
-
-# -------------------------------------------------------
-# OpenRouter / Model Configuration
-# -------------------------------------------------------
 # -------------------------------------------------------
 # OpenRouter / Model Configuration
 # -------------------------------------------------------

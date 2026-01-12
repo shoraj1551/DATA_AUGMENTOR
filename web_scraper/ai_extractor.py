@@ -69,48 +69,63 @@ Your goal is to analyze the provided HTML content and extract the primary struct
 
 def suggest_website_source(requirements):
     """
-    Suggest website URLs based on data requirements using LLM.
-    Returns top 3 options with access tips and permission checks.
-    
-    Args:
-        requirements (str): User's description of needed data.
-        
-    Returns:
-        list: List of dicts [{"url", "reason", "access_tips", "is_allowed"}]
+    Suggest website URLs using an Agentic Workflow:
+    1. Reason: Generate search query.
+    2. Act: Search web using DBG.
+    3. Synthesize: Pick best real links.
     """
     from web_scraper.validator import is_scraping_allowed
+    from web_scraper.search_agent import get_formatted_search_results
     
-    # Use the Web Scraper model (Gemini 2.0 Flash) as it has better world knowledge/search capabilities than Llama
+    # Model 
     model = get_model_for_feature("web_scraper") 
     client = get_client()
 
-    system_prompt = """You are a resourceful Data Engineer.
-Your goal is to find the Top 3 BEST URLs to scrape the requested data.
+    # --- Step 1: Generate Search Query ---
+    query_prompt = f"Convert this data requirement into a single effective Google search query: '{requirements}'. Return ONLY the query string."
+    try:
+        q_response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": query_prompt}]
+        )
+        search_query = q_response.choices[0].message.content.strip().replace('"', '')
+    except:
+        search_query = requirements # Fallback
+
+    # --- Step 2: Perform Real Web Search ---
+    # This gets real URLs and snippets from DuckDuckGo
+    search_context = get_formatted_search_results(search_query)
+
+    # --- Step 3: Synthesize & Select ---
+    system_prompt = """You are a clever Research Agent.
+You have been given a list of REAL-TIME SEARCH RESULTS.
+Your job is to select the Top 3 BEST sources from the results to satisfy the user's data requirement.
 
 RULES:
-1. **Always Return Sources**: Never say "I cannot find". If specific URL is unknown, provide the top-level domain search URL or the closest category page.
-2. **Prioritize Accessibility**: Prefer static HTML sites (Wikipedia, Govt portals) over heavy JS apps.
-3. **Handle Blocking**: If a site blocks scrapers (like LinkedIn/Twitter), you MUST still suggest it but mark it as "Hard/Blocked" in the reason.
+1. **Factuality**: ONLY suggest URLs represented in the Search Results. Do not hallucinate new ones.
+2. **Prioritization**: Prefer 'List' or 'Database' type pages over news articles.
+3. **Blocking**: If a known blocked site (LinkedIn/Twitter) appears and is relevant, include it but mark as likely restricted.
 
-JSON FORMAT:
-Return a JSON object with a key "suggestions" containing a list.
-Example:
+JSON FORMAT (List of objects):
 {
   "suggestions": [
     {
-      "url": "https://www.wikipedia.org/wiki/List_of_companies",
-      "reason": "High quality static database",
-      "access_tips": "None required"
-    },
-    {
-      "url": "https://twitter.com/search?q=data",
-      "reason": "Real-time data but requires login",
-      "access_tips": "Requires Authentication Headers"
+      "url": "https://actual-link-from-results...",
+      "reason": "Contains a comprehensive table of...",
+      "access_tips": "Static HTML, easy to scrape" 
     }
   ]
 }"""
 
-    user_prompt = f"Data Requirements: {requirements}"
+    user_prompt = f"""
+    User Requirement: {requirements}
+    
+    Used Search Query: {search_query}
+    
+    {search_context}
+    
+    Select the best sources from the search results above.
+    """
 
     try:
         response = client.chat.completions.create(
@@ -128,7 +143,6 @@ Example:
         
         # Enrich with permission check
         for item in suggestions:
-            # Default to False if url missing
             url = item.get("url", "")
             if url:
                 item["is_allowed"] = is_scraping_allowed(url)
@@ -138,4 +152,4 @@ Example:
         return suggestions
 
     except Exception as e:
-        return [{"url": "", "reason": f"Error: {str(e)}", "access_tips": "None", "is_allowed": False}]
+        return [{"url": "", "reason": f"Agent Error: {str(e)}", "access_tips": "Try manual search", "is_allowed": False}]

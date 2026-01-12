@@ -65,3 +65,40 @@ Your goal is to analyze the provided HTML content and extract the primary struct
 
     except Exception as e:
         raise Exception(f"AI Extraction Failed: {str(e)}")
+
+
+def suggest_website_source(requirements):
+    """
+    Suggest a website URL based on data requirements using LLM.
+    
+    Args:
+        requirements (str): User's description of needed data.
+        
+    Returns:
+        dict: {"url": "...", "reason": "..."}
+    """
+    # Use a reasoning model for this
+    model = get_model_for_feature("delivery_intelligence") # Llama 3.1 is good for general knowledge
+    client = get_client()
+
+    system_prompt = """You are a helpful data assistant. 
+Based on the user's data requirements, suggest the SINGLE BEST public website URL to scrap this data from.
+Prefer clean, static websites (like Wikipedia, government sites, public datasets) over complex dynamic apps.
+verify the URL is likely to exist and contain the data.
+Return ONLY a JSON object with keys: "url" (the full https link) and "reason" (short explanation)."""
+
+    user_prompt = f"Data Requirements: {requirements}"
+
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            response_format={"type": "json_object"}
+        )
+        
+        return json.loads(response.choices[0].message.content)
+    except Exception as e:
+        return {"url": "", "reason": f"Error: {str(e)}"}

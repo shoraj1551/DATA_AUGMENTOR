@@ -13,11 +13,43 @@ def render():
     st.markdown('<h2 class="main-header">Web Data Scraper <span style="background:#2563eb; color:white; font-size:0.4em; vertical-align:middle; padding:2px 8px; border-radius:10px;">BETA</span></h2>', unsafe_allow_html=True)
     st.markdown('<p class="subtitle">Extract structured data from web pages compliant with robots.txt</p>', unsafe_allow_html=True)
     
+    # Initialize session state for URL
+    if "scraper_url" not in st.session_state:
+        st.session_state.scraper_url = ""
+
+    # --- AI Source Suggestion (Optional) ---
+    with st.expander("🤖 Don't know where to look? Ask AI for a source"):
+        col_ai1, col_ai2 = st.columns([3, 1])
+        with col_ai1:
+            requirements = st.text_input("Describe the data you need:", placeholder="e.g., List of S&P 500 companies with tickers")
+        with col_ai2:
+            st.write("")
+            st.write("")
+            suggest_btn = st.button("✨ Suggest Source", type="secondary")
+        
+        if suggest_btn and requirements:
+            with st.spinner("AI is researching sources..."):
+                from web_scraper import ai_extractor
+                suggestion = ai_extractor.suggest_website_source(requirements)
+                
+            if suggestion.get("url"):
+                st.success("Source Found!")
+                st.markdown(f"**URL:** [{suggestion['url']}]({suggestion['url']})")
+                st.info(f"**Why:** {suggestion['reason']}")
+                
+                # Button to use this URL
+                def use_url():
+                    st.session_state.scraper_url = suggestion['url']
+                
+                st.button("📋 Use this URL", on_click=use_url, type="primary")
+            else:
+                st.error("AI couldn't find a confident source. Please try a different query.")
+
     # Input Section
     with st.container():
         col1, col2 = st.columns([3, 1])
         with col1:
-            url = st.text_input("Enter Website URL:", placeholder="https://example.com/data")
+            url = st.text_input("Enter Website URL:", key="scraper_url", placeholder="https://example.com/data")
         with col2:
             st.write("") # Spacer
             st.write("")

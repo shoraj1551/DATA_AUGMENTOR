@@ -69,23 +69,32 @@ Your goal is to analyze the provided HTML content and extract the primary struct
 
 def suggest_website_source(requirements):
     """
-    Suggest a website URL based on data requirements using LLM.
+    Suggest website URLs based on data requirements using LLM.
+    Returns top 3 options with access tips and permission checks.
     
     Args:
         requirements (str): User's description of needed data.
         
     Returns:
-        dict: {"url": "...", "reason": "..."}
+        list: List of dicts [{"url", "reason", "access_tips", "is_allowed"}]
     """
+    from web_scraper.validator import is_scraping_allowed
+    
     # Use a reasoning model for this
-    model = get_model_for_feature("delivery_intelligence") # Llama 3.1 is good for general knowledge
+    model = get_model_for_feature("delivery_intelligence") 
     client = get_client()
 
     system_prompt = """You are a helpful data assistant. 
-Based on the user's data requirements, suggest the SINGLE BEST public website URL to scrap this data from.
-Prefer clean, static websites (like Wikipedia, government sites, public datasets) over complex dynamic apps.
-verify the URL is likely to exist and contain the data.
-Return ONLY a JSON object with keys: "url" (the full https link) and "reason" (short explanation)."""
+Based on the user's data requirements, suggest the Top 3 BEST public website URLs to scrap this data from.
+CRITICAL: Suggest the best sources EVEN IF they might block scrapers or require headers. Do not say "I cannot find". 
+It is better to provide a blocked source (and explain it) than no source at all.
+
+For each suggestion, provide:
+1. URL: The full specific https link.
+2. Reason: Why this is a good source.
+3. Access Tips: Technical advice (e.g. "Use headers", "Try official API", "Use mobile site").
+
+Return ONLY a valid JSON object with a key "suggestions" containing a list of objects."""
 
     user_prompt = f"Data Requirements: {requirements}"
 
@@ -99,6 +108,20 @@ Return ONLY a JSON object with keys: "url" (the full https link) and "reason" (s
             response_format={"type": "json_object"}
         )
         
-        return json.loads(response.choices[0].message.content)
+        content = response.choices[0].message.content
+        data = json.loads(content)
+        suggestions = data.get("suggestions", [])
+        
+        # Enrich with permission check
+        for item in suggestions:
+            # Default to False if url missing
+            url = item.get("url", "")
+            if url:
+                item["is_allowed"] = is_scraping_allowed(url)
+            else:
+                item["is_allowed"] = False
+                
+        return suggestions
+
     except Exception as e:
-        return {"url": "", "reason": f"Error: {str(e)}"}
+        return [{"url": "", "reason": f"Error: {str(e)}", "access_tips": "None", "is_allowed": False}]

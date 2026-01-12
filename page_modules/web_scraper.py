@@ -18,7 +18,7 @@ def render():
         st.session_state.scraper_url = ""
 
     # --- AI Source Suggestion (Optional) ---
-    with st.expander("🤖 Don't know where to look? Ask AI for a source"):
+    with st.expander("🤖 Don't know where to look? Ask AI for a source", expanded=True):
         col_ai1, col_ai2 = st.columns([3, 1])
         with col_ai1:
             requirements = st.text_input("Describe the data you need:", placeholder="e.g., List of S&P 500 companies with tickers")
@@ -28,22 +28,44 @@ def render():
             suggest_btn = st.button("✨ Suggest Source", type="secondary")
         
         if suggest_btn and requirements:
-            with st.spinner("AI is researching sources..."):
+            with st.spinner("AI is researching top sources & checking permissions..."):
                 from web_scraper import ai_extractor
-                suggestion = ai_extractor.suggest_website_source(requirements)
+                suggestions = ai_extractor.suggest_website_source(requirements)
+            
+            if suggestions:
+                # Filter out empty URLs just in case
+                valid_suggestions = [s for s in suggestions if s.get("url")]
                 
-            if suggestion.get("url"):
-                st.success("Source Found!")
-                st.markdown(f"**URL:** [{suggestion['url']}]({suggestion['url']})")
-                st.info(f"**Why:** {suggestion['reason']}")
-                
-                # Button to use this URL
-                def use_url():
-                    st.session_state.scraper_url = suggestion['url']
-                
-                st.button("📋 Use this URL", on_click=use_url, type="primary")
+                if valid_suggestions:
+                    st.success(f"Found {len(valid_suggestions)} sources:")
+                    
+                    for idx, item in enumerate(valid_suggestions):
+                        with st.container():
+                            # Header with Badge
+                            c1, c2 = st.columns([4, 1])
+                            with c1:
+                                st.markdown(f"**{idx+1}. [{item['url']}]({item['url']})**")
+                            with c2:
+                                if item['is_allowed']:
+                                    st.markdown('<span style="background:#dcfce7; color:#166534; padding:2px 8px; border-radius:12px; font-size:0.8em;">Allowed</span>', unsafe_allow_html=True)
+                                else:
+                                    st.markdown('<span style="background:#fee2e2; color:#991b1b; padding:2px 8px; border-radius:12px; font-size:0.8em;">Blocked</span>', unsafe_allow_html=True)
+                            
+                            # Set description and tips
+                            st.caption(f"Reason: {item['reason']}")
+                            if item.get("access_tips"):
+                                st.info(f"💡 **Access Tip**: {item['access_tips']}")
+                            
+                            # Use button
+                            if st.button("📋 Use this Source", key=f"use_{idx}"):
+                                 st.session_state.scraper_url = item['url']
+                                 st.rerun() # Rerun to update the input field immediately
+                            
+                            st.divider()
+                else:
+                    st.warning("AI returned a response but no valid URLs were found.")
             else:
-                st.error("AI couldn't find a confident source. Please try a different query.")
+                st.error("AI could not generate a response. Please check your query.")
 
     # Input Section
     with st.container():

@@ -6,10 +6,24 @@ import json
 import os
 from pathlib import Path
 from typing import List, Optional
+import time
+from contextlib import contextmanager
+
+# Cross-platform file locking
+try:
+    import fcntl  # Unix/Linux/Mac
+    HAS_FCNTL = True
+except ImportError:
+    HAS_FCNTL = False
+    try:
+        import msvcrt  # Windows
+        HAS_MSVCRT = True
+    except ImportError:
+        HAS_MSVCRT = False
 
 
 class PlansDB:
-    """Simple JSON file-based storage for execution plans"""
+    """Simple JSON file-based storage for execution plans with file locking"""
     
     def __init__(self, db_path: str = "delivery_intelligence/storage/plans.json"):
         self.db_path = Path(db_path)
@@ -19,18 +33,62 @@ class PlansDB:
         if not self.db_path.exists():
             self._write_db([])
     
+    @contextmanager
+    def _lock_file(self, file_handle, timeout=10):
+        """
+        Cross-platform file locking context manager.
+        Prevents concurrent writes from corrupting data.
+        """
+        if HAS_FCNTL:
+            # Unix/Linux/Mac
+            start_time = time.time()
+            while True:
+                try:
+                    fcntl.flock(file_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except IOError:
+                    if time.time() - start_time > timeout:
+                        raise TimeoutError("Could not acquire file lock within timeout")
+                    time.sleep(0.1)
+            try:
+                yield
+            finally:
+                fcntl.flock(file_handle.fileno(), fcntl.LOCK_UN)
+        
+        elif HAS_MSVCRT:
+            # Windows
+            start_time = time.time()
+            while True:
+                try:
+                    msvcrt.locking(file_handle.fileno(), msvcrt.LK_NBLCK, 1)
+                    break
+                except IOError:
+                    if time.time() - start_time > timeout:
+                        raise TimeoutError("Could not acquire file lock within timeout")
+                    time.sleep(0.1)
+            try:
+                yield
+            finally:
+                msvcrt.locking(file_handle.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            # No locking available - just yield (fallback for unsupported platforms)
+            print("WARNING: File locking not available on this platform. Concurrent writes may cause data corruption.")
+            yield
+    
     def _read_db(self) -> List[dict]:
-        """Read all plans from database"""
+        """Read all plans from database with file locking"""
         try:
             with open(self.db_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                with self._lock_file(f):
+                    return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
             return []
     
     def _write_db(self, plans: List[dict]):
-        """Write all plans to database"""
+        """Write all plans to database with file locking"""
         with open(self.db_path, 'w', encoding='utf-8') as f:
-            json.dump(plans, f, indent=2, ensure_ascii=False)
+            with self._lock_file(f):
+                json.dump(plans, f, indent=2, ensure_ascii=False)
     
     def save_plan(self, plan: dict) -> str:
         """Save a new plan or update existing one"""

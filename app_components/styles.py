@@ -47,6 +47,9 @@ def apply_custom_styles():
         border-radius: 12px;
         padding: 2rem;
         height: 100%;
+        min-height: 420px;    /* Force consistent height */
+        display: flex;        /* Enable flex layout */
+        flex-direction: column;
         transition: all 0.2s ease-in-out;
     }
 
@@ -66,8 +69,30 @@ def apply_custom_styles():
         align-items: center;
         justify-content: center;
         border-radius: 10px;
+        flex-shrink: 0;
+    }
+    
+    .tool-card h3 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
     }
 
+    /* Description text clamping */
+    .tool-card p {
+        color: #64748b;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin-bottom: 20px;
+        flex-grow: 1;
+        
+        /* Line Clamping to 3 lines */
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
     /* 4. Buttons (Professional Blue) */
     .stButton > button {
         background-color: #2563eb; /* Blue-600 */

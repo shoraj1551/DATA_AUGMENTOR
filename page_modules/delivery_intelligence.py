@@ -8,6 +8,7 @@ import altair as alt
 from components.navigation import back_to_home
 from delivery_intelligence.llm.plan_generator import generate_execution_plan
 from delivery_intelligence.storage.plans_db import PlansDB
+from document_parser import extractor
 
 
 def calculate_progress(plan):
@@ -67,14 +68,26 @@ def render():
             )
         else:
             uploaded_file = st.file_uploader(
-                "Upload project document:",
-                type=['pdf', 'docx', 'txt'],
-                help="Upload a document with project requirements"
+                "Upload Project Document (PRD/Spec):",
+                type=['pdf', 'docx', 'txt', 'md'],
+                help="Upload a document with project requirements. The AI will read it to build the plan."
             )
-            prompt = None
+            prompt = st.text_area("Additional Instructions (Optional):", placeholder="E.g., Focus on the payment module first...")
+            
             if uploaded_file:
-                st.info("📄 Document uploaded. Extraction coming in Phase 5!")
-                prompt = f"[Document: {uploaded_file.name}] - Document parsing will be implemented in Phase 5"
+                with st.spinner("Reading document..."):
+                    try:
+                        # Extract text using our shared extractor
+                        doc_text = extractor.extract_text_from_file(uploaded_file)
+                        if doc_text:
+                            st.success(f"✅ Loaded {len(doc_text)} chars from {uploaded_file.name}")
+                            st.session_state.plan_context = doc_text # Store for generation
+                        else:
+                            st.warning("Could not extract text from file.")
+                    except Exception as e:
+                        st.error(f"Extraction Error: {e}")
+            else:
+                 st.session_state.plan_context = ""
         
         # Engineer experience level
         col1, col2 = st.columns([2, 1])
@@ -140,11 +153,17 @@ def render():
         
         # Generate button
         if st.button("🎯 Generate Execution Plan", type="primary", use_container_width=True):
-            if prompt and prompt.strip():
+            has_context = st.session_state.get("plan_context", "")
+            if (prompt and prompt.strip()) or has_context:
                 with st.spinner("🤖 AI is generating your execution plan..."):
                     try:
                         # Generate plan
-                        plan = generate_execution_plan(prompt, engineer_level, team_members=final_team_roster)
+                        context_text = st.session_state.get("plan_context", "")
+                        # If prompt is empty but we have context, use a default prompt
+                        if not prompt and context_text:
+                            prompt = "Generate a comprehensive execution plan based on the provided document."
+                        
+                        plan = generate_execution_plan(prompt, engineer_level, team_members=final_team_roster, context_text=context_text)
                         
                         # Save to database
                         plan_id = db.save_plan(plan)

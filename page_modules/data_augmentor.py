@@ -109,15 +109,25 @@ def render():
             st.write("**Original Data:**")
             st.dataframe(df.head())
             
-            # Detect PII columns
+            # Step 1: Identify PII Columns
+            st.markdown("### Step 1: Identify PII Columns")
             pii_patterns = ['name', 'email', 'phone', 'address', 'ssn', 'social', 'dob', 'birth']
-            pii_columns = [col for col in df.columns if any(pattern in col.lower() for pattern in pii_patterns)]
+            suggested_pii_cols = [col for col in df.columns if any(pattern in col.lower() for pattern in pii_patterns)]
             
-            if pii_columns:
-                st.write("**Detected PII Columns:**")
-                exclude_cols = st.multiselect("Select columns to EXCLUDE from masking:", pii_columns)
+            selected_pii_cols = st.multiselect(
+                "Select columns to MASK (you can add/remove columns):",
+                options=df.columns,
+                default=suggested_pii_cols,
+                help="The AI will attempt to find PII columns, but you can manually select the correct ones here."
+            )
+            
+            # Calculate exclude_cols -> All columns NOT selected
+            exclude_cols = [col for col in df.columns if col not in selected_pii_cols]
+
+            if selected_pii_cols:
+                # Step 2: Configure Rules
+                st.markdown("### Step 2: Configure Rules")
                 
-                # Default Rules
                 default_rules = """- Age: Replace with random ages (e.g., 25, 42, 38)
 - Income: Replace with masked values (e.g., "XXXXX", "MASKED", or random numbers)
 - Names: Replace with "Person_1", "Person_2", etc.
@@ -125,27 +135,39 @@ def render():
 - Phone: Replace with "XXX-XXX-XXXX"
 - Addresses: Replace with "123 Main St", "456 Oak Ave" """
 
-                with st.expander("⚙️ Configure Masking Rules", expanded=False):
+                with st.expander("⚙️ Customize Masking Logic", expanded=False):
                     masking_rules = st.text_area(
                         "Edit Masking Rules (Instructions for AI):",
                         value=default_rules,
-                        height=200,
+                        height=150,
                         help="Analyze the rules above and modify them to control how specific PII is masked."
                     )
                 
-                if st.button("Mask PII"):
+                # Step 3: Action
+                st.markdown("### Step 3: Mask & Download")
+                if st.button("🎭 Mask PII Data", type="primary"):
                     with st.spinner("Masking PII data..."):
                         try:
                             masked_df = mask_pii_data(df, exclude_cols, masking_rules)
-                            st.success("✅ PII data masked!")
+                            st.success("✅ PII data masked successfully!")
+                            
+                            st.write("**Preview (Top 5 Rows):**")
                             st.dataframe(masked_df.head())
                             
                             csv = masked_df.to_csv(index=False)
-                            st.download_button("📥 Download Masked CSV", csv, "masked_data.csv", "text/csv")
+                            col1, col2 = st.columns([1, 2])
+                            with col1:
+                                st.download_button(
+                                    "📥 Download Masked CSV", 
+                                    csv, 
+                                    "masked_data.csv", 
+                                    "text/csv",
+                                    use_container_width=True
+                                )
                         except Exception as e:
                             st.error(f"Error: {str(e)}")
             else:
-                st.info("No PII columns detected in this dataset.")
+                st.info("Please select at least one column to mask.")
     
     elif operation == "Generate Edge Case Data":
         st.subheader("Generate Edge Case Data")

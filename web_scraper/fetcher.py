@@ -14,7 +14,7 @@ def fetch_content(url):
         requests.exceptions.RequestException: If the request fails.
     """
     headers = {
-        "User-Agent": "DataAugmentorBot/1.0 (Educational/Research Purpose)"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
     
     try:

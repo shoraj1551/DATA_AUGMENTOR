@@ -8,7 +8,7 @@ from document_parser import extractor, qa_engine, structure_engine
 
 def render():
     back_to_home("DocumentParser")
-    st.markdown('<h2 class="main-header">Document Intelligence <span style="background:#8b5cf6; color:white; font-size:0.4em; vertical-align:middle; padding:2px 8px; border-radius:10px;">BETA</span></h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="main-header">Document Intelligence <span style="background:#2563eb; color:white; font-size:0.4em; vertical-align:middle; padding:2px 8px; border-radius:10px;">BETA</span></h2>', unsafe_allow_html=True)
     st.markdown('<p class="subtitle">Chat with documents or extract structured data tables.</p>', unsafe_allow_html=True)
 
     # --- Session State ---
@@ -20,6 +20,8 @@ def render():
         st.session_state.question_count = 0
     if "story_highlights" not in st.session_state:
         st.session_state.story_highlights = []
+    if "parser_mode" not in st.session_state:
+        st.session_state.parser_mode = None # 'chat' or 'extract' or None
         
     # --- Sidebar Controls ---
     with st.sidebar:
@@ -30,16 +32,16 @@ def render():
             accept_multiple_files=True
         )
         
-        mode = st.radio("Select Mode", ["💬 Chat Q&A", "📊 Data Extractor"], index=0)
-        
+        # Reset button always visible
         if st.button("🔄 Reset Session", type="secondary"):
             st.session_state.doc_text = ""
             st.session_state.chat_history = []
             st.session_state.question_count = 0
             st.session_state.story_highlights = []
+            st.session_state.parser_mode = None
             st.rerun()
 
-    # --- Processing Logic ---
+    # --- Processing Logic (Run once on upload) ---
     if uploaded_files and not st.session_state.doc_text:
         with st.spinner("Processing documents & Generating Story..."):
             full_text = ""
@@ -56,28 +58,75 @@ def render():
             
             st.rerun()
 
-    # --- Main Interface ---
+    # --- Main Interface Flow ---
+    
+    # 1. No Documents
     if not st.session_state.doc_text:
-        st.info("👈 Upload documents in the sidebar to begin.")
+        # Show a placeholder or instructions
+        st.info("👈 Please upload your documents in the sidebar to begin.")
+        
+        # Show feature preview cards (Non-interactive until upload)
+        c1, c2 = st.columns(2)
+        with c1:
+            st.warning("💬 **Chat Q&A**: Ask questions to your PDF/Docs")
+        with c2:
+            st.warning("📊 **Data Extractor**: Convert Unstructured files to Tables")
         return
 
-    # Two Column Layout (Left: Story, Right: Main)
-    col_story, col_main = st.columns([1, 2.5])
-    
-    # === Story / Knowledge Base Side ===
-    with col_story:
-        st.subheader("💡 Knowledge Story")
-        if st.session_state.story_highlights:
-            for i, highlight in enumerate(st.session_state.story_highlights):
-                st.info(f"**{i+1}.** {highlight}")
-        else:
-            st.caption("No highlights generated.")
+    # 2. Documents Uploaded but No Mode Selected (WIZARD STEP)
+    if not st.session_state.parser_mode:
+        st.divider()
+        st.subheader("🤖 How would you like to process these documents?")
+        
+        col_m1, col_m2 = st.columns(2)
+        
+        with col_m1:
+            with st.container(border=True):
+                st.markdown("### 💬 Chat Q&A")
+                st.write("Interact with your documents like a chatbot. Ask questions, get summaries, and find insights.")
+                if st.button("Start Chat Session", use_container_width=True, type="primary"):
+                    st.session_state.parser_mode = "chat"
+                    st.rerun()
+                    
+        with col_m2:
+             with st.container(border=True):
+                st.markdown("### 📊 Data Extractor")
+                st.write("Turn unstructured text/PDFs into clean Excel/CSV tables based on your requirements.")
+                if st.button("Start Extraction", use_container_width=True, type="primary"):
+                    st.session_state.parser_mode = "extract"
+                    st.rerun()
+        return
 
-    # === Main Interaction Side ===
-    with col_main:
-        if mode == "💬 Chat Q&A":
-            st.subheader("Chat with Context")
+    # 3. specific Mode Interface
+    
+    # Header with Back Button
+    c_head1, c_head2 = st.columns([0.8, 0.2])
+    with c_head1:
+        mode_label = "💬 Chat Q&A" if st.session_state.parser_mode == "chat" else "📊 Data Extractor"
+        st.subheader(f"Mode: {mode_label}")
+    with c_head2:
+        if st.button("← Switch Mode"):
+            st.session_state.parser_mode = None
+            st.rerun()
             
+    st.divider()
+
+    # --- CHAT MODE ---
+    if st.session_state.parser_mode == "chat":
+        # Two Column Layout (Left: Story, Right: Main)
+        col_story, col_main = st.columns([1, 2.5])
+        
+        # === Story / Knowledge Base Side ===
+        with col_story:
+            st.markdown("#### 💡 Key Insights")
+            if st.session_state.story_highlights:
+                for i, highlight in enumerate(st.session_state.story_highlights):
+                    st.info(f"**{i+1}.** {highlight}")
+            else:
+                st.caption("No highlights generated.")
+
+        # === Main Interaction Side ===
+        with col_main:
             # Limit check
             if st.session_state.question_count >= 20:
                 st.error("🛑 Question limit reached (20/20). Please reset the session to ask more.")
@@ -109,31 +158,31 @@ def render():
                             st.session_state.chat_history.append({"role": "assistant", "content": response})
                             st.rerun()
 
-        elif mode == "📊 Data Extractor":
-            st.subheader("Structured Data Extraction")
-            st.markdown("Describe the table or data fields you want to extract.")
-            
-            reqs = st.text_area("Extraction Requirements:", placeholder="Extract all invoice items with Date, Item Name, and Amount.")
-            
-            if st.button("Extract Data", type="primary"):
-                if reqs:
-                    with st.spinner("Parsing documents into structured format..."):
-                        try:
-                            dfs = structure_engine.parse_structured_data(st.session_state.doc_text, reqs)
-                            
-                            st.success(f"Extracted {len(dfs)} table(s).")
-                            
-                            for name, df in dfs:
-                                with st.expander(f"Table: {name}", expanded=True):
-                                    st.dataframe(df)
-                                    csv = df.to_csv(index=False).encode('utf-8')
-                                    st.download_button(
-                                        f"📥 Download {name}.csv",
-                                        csv,
-                                        f"{name}.csv",
-                                        "text/csv"
-                                    )
-                        except Exception as e:
-                            st.error(f"Extraction Failed: {str(e)}")
-                else:
-                    st.warning("Please enter requirements.")
+    # --- EXTRACTOR MODE ---
+    elif st.session_state.parser_mode == "extract":
+        st.markdown("#### Describe the data you want to extract")
+        
+        reqs = st.text_area("Extraction Requirements:", placeholder="e.g. Extract a list of all invoice items with Date, Description, Quantity, and Total Amount.")
+        
+        if st.button("Run Extraction 🚀", type="primary"):
+            if reqs:
+                with st.spinner("Parsing documents into structured format..."):
+                    try:
+                        dfs = structure_engine.parse_structured_data(st.session_state.doc_text, reqs)
+                        
+                        st.success(f"✅ Extracted {len(dfs)} table(s).")
+                        
+                        for name, df in dfs:
+                            with st.expander(f"Table: {name}", expanded=True):
+                                st.dataframe(df, use_container_width=True)
+                                csv = df.to_csv(index=False).encode('utf-8')
+                                st.download_button(
+                                    f"📥 Download {name}.csv",
+                                    csv,
+                                    f"{name}.csv",
+                                    "text/csv"
+                                )
+                    except Exception as e:
+                        st.error(f"Extraction Failed: {str(e)}")
+            else:
+                st.warning("Please enter requirements.")

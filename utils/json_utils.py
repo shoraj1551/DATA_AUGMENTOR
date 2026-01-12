@@ -19,7 +19,12 @@ def parse_records(response):
         ValueError: If response format is invalid
     """
     try:
-        content = response.choices[0].message.content
+        # Check if response is already a string (content)
+        if isinstance(response, str):
+            content = response
+        else:
+            # Extract content from LLM response object
+            content = response.choices[0].message.content
         
         if not content:
             raise ValueError("LLM returned empty response")

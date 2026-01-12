@@ -126,7 +126,10 @@ FREE_MODELS_BY_USE_CASE = {
     # ===============================
     "document_parser": {
         "default": "google/gemini-2.0-flash-exp:free",
-        "alternatives": [],
+        "alternatives": [
+            "meta-llama/llama-3.1-8b-instruct",
+            "qwen/qwen-2.5-7b-instruct"
+        ],
         "why": [
             "1M token context window perfect for large PDFs/Docs",
             "Native multimodal support for images/charts",

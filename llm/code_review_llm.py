@@ -59,12 +59,27 @@ def generate_unit_tests_with_llm(code: str, language: str, test_framework: str) 
 
 Generate comprehensive UNIT tests using {test_framework}.
 
-Requirements:
-- ISOLATE functions (mock external dependencies/DBs/APIs)
-- Test individual functions in isolation
-- Include edge cases and boundary conditions
-- Add negative test cases
-- Return ONLY the test code, no explanations."""
+CRITICAL REQUIREMENTS:
+1. ISOLATION: Mock ALL external dependencies (databases, APIs, file I/O, network calls)
+2. Test individual functions/methods in complete isolation
+3. Focus on testing the logic of ONE function at a time
+4. Include edge cases, boundary conditions, and negative test cases
+
+OUTPUT FORMAT:
+Provide your response in TWO parts:
+
+**Part 1: Natural Language Explanation**
+Write 2-3 sentences explaining:
+- What aspects of the code you're testing
+- Why these unit tests are important
+- What mocking strategy you used
+
+**Part 2: Complete Test Code**
+```{language}
+[Your complete, runnable test code here]
+```
+
+Return both parts."""
 
     user_prompt = f"""Generate {test_framework} UNIT tests for this {language} code:
 
@@ -72,7 +87,7 @@ Requirements:
 {code[:5000]}
 ```
 
-Return complete, runnable test code."""
+Remember: Unit tests = ISOLATED testing with MOCKED dependencies."""
 
     response = get_client().chat.completions.create(
         model=get_model_for_feature("code_review"),
@@ -92,16 +107,35 @@ def generate_functional_tests_with_llm(code: str, language: str, test_framework:
     """
     system_prompt = f"""You are an expert test engineer for {language}.
 
-Analyze the code complexity.
-1. If the code is a simple pure function where Unit Tests and Functional Tests would be IDENTICAL, return the exact string: "SAME AS UNIT TEST"
-2. Otherwise, generate FUNCTIONAL/INTEGRATION tests using {test_framework}.
+FIRST: Analyze if this code has meaningful integration points or workflows.
 
-Requirements for Functional Tests:
-- Focus on WORKFLOWS and interactions between components
-- Do NOT mock internal logic; test the real flow
-- Test end-to-end scenarios (e.g. valid input -> process -> output)
-- Test integration points
-- Return ONLY the test code (or "SAME AS UNIT TEST")."""
+If the code is a simple pure function with NO external dependencies, NO database calls, NO API calls, and NO multi-component workflows:
+→ Return EXACTLY: "SAME AS UNIT TEST"
+
+Otherwise, generate FUNCTIONAL/INTEGRATION tests using {test_framework}.
+
+CRITICAL REQUIREMENTS for Functional Tests:
+1. NO MOCKING: Test the REAL integration between components
+2. Test complete WORKFLOWS (e.g., user input → processing → database → output)
+3. Test how multiple functions/classes work TOGETHER
+4. Test actual database queries, API calls, file operations (if present)
+5. Test end-to-end scenarios with realistic data
+
+OUTPUT FORMAT (if not "SAME AS UNIT TEST"):
+Provide your response in TWO parts:
+
+**Part 1: Natural Language Explanation**
+Write 2-3 sentences explaining:
+- What workflows or integration points you're testing
+- How these differ from unit tests (what's NOT mocked)
+- What end-to-end scenarios you're covering
+
+**Part 2: Complete Test Code**
+```{language}
+[Your complete, runnable test code here]
+```
+
+Return both parts OR "SAME AS UNIT TEST"."""
 
     user_prompt = f"""Generate {test_framework} FUNCTIONAL tests for this {language} code:
 
@@ -109,7 +143,7 @@ Requirements for Functional Tests:
 {code[:5000]}
 ```
 
-Return complete, runnable test code or "SAME AS UNIT TEST"."""
+Remember: Functional tests = REAL workflows, NO mocking, test INTEGRATION."""
 
     response = get_client().chat.completions.create(
         model=get_model_for_feature("code_review"),
@@ -130,25 +164,35 @@ def generate_failure_scenarios_with_llm(code: str, language: str) -> str:
     system_prompt = f"""You are a security and QA expert for {language}.
 
 Generate ALL potential failure scenarios that could break this code. Be exhaustive.
-Focus on:
-- Edge case inputs
-- Boundary values
-- Invalid types
-- Malformed data
-- Security attack vectors
 
-Return JSON with this EXACT structure:
+Focus on:
+- Edge case inputs (empty strings, null, undefined, zero, negative numbers)
+- Boundary values (max int, min int, very large strings)
+- Invalid types (string instead of number, null instead of object)
+- Malformed data (invalid JSON, corrupted files, bad encoding)
+- Security attack vectors (SQL injection, XSS, buffer overflow)
+- Concurrency issues (race conditions, deadlocks)
+- Resource exhaustion (memory leaks, infinite loops)
+
+CRITICAL: Return ONLY valid JSON. Escape all special characters properly.
+Use this EXACT structure:
+
 {{
   "scenarios": [
     {{
-      "function": "target_function_name",
-      "input": "specific input to test",
+      "function": "function_name",
+      "input": "test input value",
       "reason": "why this causes failure",
-      "expected": "expected exception or behavior"
+      "expected": "expected exception or error"
     }}
   ]
-}}"""
+}}
 
+IMPORTANT: 
+- Keep "input" and "reason" fields SHORT (under 100 characters)
+- Properly escape quotes and newlines in JSON strings
+- Do NOT include code blocks or markdown
+- Return ONLY the raw JSON object"""
 
     user_prompt = f"""Generate failure scenarios for this {language} code:
 
@@ -156,7 +200,7 @@ Return JSON with this EXACT structure:
 {code[:5000]}
 ```
 
-Return ONLY valid JSON."""
+Return ONLY valid JSON with the exact structure specified."""
 
     response = get_client().chat.completions.create(
         model=get_model_for_feature("code_review"),

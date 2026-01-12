@@ -60,7 +60,7 @@ def render():
         <div class="tool-card">
             <div class="card-icon">🎯</div>
             <div class="badge">Planning</div>
-            <h3>Delivery Intelligence</h3>
+            <h3>Delivery Intelligence <span style="background:#2563eb; color:white; font-size:0.5em; vertical-align:middle; padding:2px 8px; border-radius:10px;">BETA</span></h3>
             <p style="color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">
                 AI-assisted execution planning with automated epic, story, and task generation.
             </p>

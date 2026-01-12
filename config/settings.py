@@ -21,6 +21,8 @@ except ImportError:
 # 1. Streamlit secrets
 # 2. Environment variable
 # -------------------------------------------------------
+OPENROUTER_API_KEY = None
+
 # 1. Try Streamlit Config (Secrets)
 try:
     import streamlit as st
@@ -39,11 +41,21 @@ except Exception as e:
     print(f"INFO: Could not load secrets: {e}")
     pass
 
+# 2. Try Environment if not found in secrets
+if not OPENROUTER_API_KEY:
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+
+# Warning instead of crash if missing
+if not OPENROUTER_API_KEY:
+    print("WARNING: OPENROUTER_API_KEY is not set. AI features will be disabled.")
+
 def get_api_key():
     """
     Dynamically retrieve API Key from secrets or env.
     Preferred over static variable to avoid import-time issues.
     """
+    global OPENROUTER_API_KEY
+    
     # 1. Try static variable if already set
     if OPENROUTER_API_KEY:
         return OPENROUTER_API_KEY
@@ -53,20 +65,18 @@ def get_api_key():
         import streamlit as st
         if hasattr(st, "secrets"):
             key = st.secrets.get("OPENROUTER_API_KEY") or st.secrets.get("openrouter_api_key")
-            if key: return key
+            if key: 
+                OPENROUTER_API_KEY = key
+                return key
     except:
         pass
         
     # 3. Try Environment
-    return os.getenv("OPENROUTER_API_KEY")
+    key = os.getenv("OPENROUTER_API_KEY")
+    if key:
+        OPENROUTER_API_KEY = key
+    return key
 
-if not OPENROUTER_API_KEY:
-    # Try getting from os environment again as fallback
-    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-
-# Warning instead of crash if missing
-if not OPENROUTER_API_KEY:
-    print("WARNING: OPENROUTER_API_KEY is not set. AI features will be disabled.")
 
 # -------------------------------------------------------
 # OpenRouter / Model Configuration

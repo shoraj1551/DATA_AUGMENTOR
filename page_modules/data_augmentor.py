@@ -3,7 +3,7 @@ DataAugmentor page - Generate, augment, and secure data
 """
 import streamlit as st
 import pandas as pd
-from components.navigation import back_to_home
+from app_components.navigation import back_to_home
 from llm.generate_synthetic_data import generate_synthetic_data
 from llm.augment_existing_data import augment_existing_data
 from llm.mask_pii_data import mask_pii_data

@@ -4,7 +4,7 @@ Web Data Scraper Page Module
 import streamlit as st
 import pandas as pd
 import json
-from components.navigation import back_to_home
+from app_components.navigation import back_to_home
 from web_scraper import validator, fetcher, parser
 
 def render():

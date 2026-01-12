@@ -3,7 +3,7 @@ Code Review page - AI-powered code quality assurance
 """
 import streamlit as st
 import json
-from components.navigation import back_to_home
+from app_components.navigation import back_to_home
 from utils.code_analyzer import detect_language, parse_notebook, analyze_code_structure
 from llm.code_review_llm import (
     review_code_with_llm,

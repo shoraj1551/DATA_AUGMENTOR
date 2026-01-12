@@ -2,7 +2,7 @@
 File Comparison page - Compare datasets with precision
 """
 import streamlit as st
-from components.navigation import back_to_home
+from app_components.navigation import back_to_home
 from utils.file_comparator import compare_files
 
 

@@ -5,7 +5,7 @@ Modular Streamlit application with multiple AI-powered tools
 import streamlit as st
 
 # Import shared components
-from components import styles, navigation, footer
+from app_components import styles, navigation, footer
 
 # Import page modules
 from page_modules import home, data_augmentor, file_comparison, code_review, delivery_intelligence, web_scraper, document_parser

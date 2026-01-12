@@ -2,14 +2,7 @@
 Home page - Landing page with tool cards
 """
 import streamlit as st
-from components.navigation import go_to_tool
-
-
-"""
-Home page - Landing page with tool cards
-"""
-import streamlit as st
-from components.navigation import go_to_tool
+from app_components.navigation import go_to_tool
 
 def render():
     """Render the home page with tool cards"""

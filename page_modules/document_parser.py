@@ -4,7 +4,7 @@ Document Parser & Intelligence UI Module (V2)
 import streamlit as st
 import pandas as pd
 import os
-from components.navigation import back_to_home
+from app_components.navigation import back_to_home
 from document_parser import extractor, qa_engine, structure_engine, rag_engine
 
 def render():

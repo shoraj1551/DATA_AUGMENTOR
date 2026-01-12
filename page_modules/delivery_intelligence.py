@@ -5,7 +5,7 @@ import streamlit as st
 import pandas as pd
 import json
 import altair as alt
-from components.navigation import back_to_home
+from app_components.navigation import back_to_home
 from delivery_intelligence.llm.plan_generator import generate_execution_plan
 from delivery_intelligence.storage.plans_db import PlansDB
 from document_parser import extractor

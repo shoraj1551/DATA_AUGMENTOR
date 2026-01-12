@@ -186,10 +186,12 @@ def render():
                 if do_unit_tests:
                     with st.spinner("Generating unit tests..."):
                         try:
-                            tests = generate_unit_tests_with_llm(code, language, structure['test_framework'])
-                            if tests:
-                                st.code(tests, language=language)
-                                st.download_button("📥 Download Tests", str(tests), f"test_{uploaded_file.name}")
+                            unit_tests = generate_unit_tests_with_llm(code, language, structure['test_framework'])
+                            if unit_tests:
+                                st.code(unit_tests, language=language)
+                                st.download_button("📥 Download Tests", str(unit_tests), f"test_{uploaded_file.name}")
+                                # Store in session for comparison
+                                st.session_state['unit_tests'] = unit_tests
                             else:
                                 st.warning("No tests generated.")
                         except Exception as e:
@@ -202,19 +204,35 @@ def render():
                 if do_functional_tests:
                     with st.spinner("Generating functional tests..."):
                         try:
-                            tests = generate_functional_tests_with_llm(code, language, structure['test_framework'])
+                            from llm.code_review_llm import calculate_code_similarity
                             
-                            if tests and "SAME AS UNIT TEST" in tests:
-                                st.info("ℹ️ Functional tests are identical to Unit Tests for this code section.")
-                            elif tests:
-                                st.code(tests, language=language)
-                                st.download_button("📥 Download Tests", str(tests), f"functional_test_{uploaded_file.name}")
+                            functional_tests = generate_functional_tests_with_llm(code, language, structure['test_framework'])
+                            
+                            # Check if AI returned "SAME AS UNIT TEST"
+                            if functional_tests and "SAME AS UNIT TEST" in functional_tests:
+                                st.info("ℹ️ **Functional tests are identical to Unit Tests for this simple code.**\n\nThis code has no integration points, database calls, or multi-component workflows that would require different functional testing.")
+                            elif functional_tests:
+                                # CRITICAL: Check similarity with unit tests if both exist
+                                if 'unit_tests' in st.session_state:
+                                    similarity = calculate_code_similarity(st.session_state['unit_tests'], functional_tests)
+                                    
+                                    if similarity > 0.90:  # More than 90% similar
+                                        st.info(f"ℹ️ **Functional tests are {int(similarity*100)}% identical to Unit Tests.**\n\nThis code appears to be a simple function without integration points. Functional testing would be redundant.\n\n**Recommendation:** Focus on the unit tests above, which already cover this code comprehensively.")
+                                    else:
+                                        st.success(f"✅ **Distinct Functional Tests Generated** (Similarity: {int(similarity*100)}%)")
+                                        st.code(functional_tests, language=language)
+                                        st.download_button("📥 Download Tests", str(functional_tests), f"functional_test_{uploaded_file.name}")
+                                else:
+                                    # No unit tests to compare against
+                                    st.code(functional_tests, language=language)
+                                    st.download_button("📥 Download Tests", str(functional_tests), f"functional_test_{uploaded_file.name}")
                             else:
                                 st.warning("No functional tests generated.")
                         except Exception as e:
                             st.error(f"Error: {str(e)}")
                 else:
                     st.info("Functional test generation not requested")
+
             
             # Failure Scenarios
             with tabs[3]:

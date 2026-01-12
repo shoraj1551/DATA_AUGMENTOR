@@ -1,6 +1,22 @@
 from llm.client import get_client
 from utils.cache import llm_cache
 from config.settings import get_model_for_feature
+import difflib
+
+
+def calculate_code_similarity(code1: str, code2: str) -> float:
+    """
+    Calculate similarity between two code snippets.
+    Returns a value between 0.0 (completely different) and 1.0 (identical).
+    """
+    # Remove whitespace and normalize for comparison
+    normalized1 = ''.join(code1.split())
+    normalized2 = ''.join(code2.split())
+    
+    # Use difflib to calculate similarity ratio
+    similarity = difflib.SequenceMatcher(None, normalized1, normalized2).ratio()
+    return similarity
+
 
 
 @llm_cache.cached

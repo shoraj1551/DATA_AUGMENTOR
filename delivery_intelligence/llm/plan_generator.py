@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime
 
 
-def generate_execution_plan(prompt: str, engineer_level: str = "mid", team_members=None) -> dict:
+def generate_execution_plan(prompt: str, engineer_level: str = "mid", team_members=None, context_text: str = "") -> dict:
     """
     Generate a structured execution plan using LLM, optionally with team assignments.
     
@@ -18,6 +18,7 @@ def generate_execution_plan(prompt: str, engineer_level: str = "mid", team_membe
         engineer_level (str): Default experience level (fallback)
         team_members (list[dict]): Optional list of team members 
                                    [{"id": "1", "name": "Alice", "role": "Senior Backend", "level": "senior"}]
+        context_text (str): Optional text content from uploaded documents (PRD/Specs)
     
     Returns:
         dict: Structured plan with epics, stories, and tasks
@@ -91,8 +92,15 @@ Output format:
     
     guidance = level_guidance.get(engineer_level, level_guidance["mid"])
 
-    user_prompt = f"""Project Requirements:
+    # Build User Prompt with Document Context
+    document_section = ""
+    if context_text:
+        document_section = f"\n\n--- DOCUMENT CONTEXT (PRD/Spec) ---\n{context_text[:50000]}\n--- END DOCUMENT ---\n"
+
+    user_prompt = f"""Project Requirements / Instructions:
 {prompt}
+
+{document_section}
 
 {team_context}
 

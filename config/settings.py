@@ -23,11 +23,13 @@ except ImportError:
 # -------------------------------------------------------
 OPENROUTER_API_KEY = None
 
+# 1. Try Streamlit Config (Secrets)
 try:
     import streamlit as st
-    OPENROUTER_API_KEY = st.secrets.get("OPENROUTER_API_KEY")
+    if hasattr(st, "secrets"):
+        # Access safely to avoid KeyErrors if secrets.toml doesn't exist
+        OPENROUTER_API_KEY = st.secrets.get("OPENROUTER_API_KEY")
 except Exception:
-    # Not running in Streamlit
     pass
 
 if not OPENROUTER_API_KEY:

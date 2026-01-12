@@ -45,9 +45,17 @@ def render_sidebar():
     
     tool = st.session_state.tool
     
-    # Check API key
-    import os
-    if not os.getenv("OPENROUTER_API_KEY"):
-        st.sidebar.error("⚠️ API Key missing")
+    # Check API key using the centralized settings
+    from config import settings
+    if not settings.OPENROUTER_API_KEY:
+        st.sidebar.warning("⚠️ API Key missing")
+        st.sidebar.markdown(
+            """
+            <div style="font-size:0.8em; color:#64748b; margin-top:-10px; margin-bottom:10px;">
+            Set <code>OPENROUTER_API_KEY</code> in secrets or env vars to enable AI features.
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
     
     return tool

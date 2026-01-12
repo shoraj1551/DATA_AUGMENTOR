@@ -119,15 +119,14 @@ FREE_MODELS_BY_USE_CASE = {
             "Excellent at converting unstructured text to JSON",
             "Fast inference speed for real-time scraping",
             "Free tier availability"
-        ]
+        ],
+    },
     # ===============================
     # 6️⃣ Document Parser & Intelligence
     # ===============================
     "document_parser": {
         "default": "google/gemini-2.0-flash-exp:free",
-        "alternatives": [
-            "google/gemini-2.0-flash-thinking-exp:free"
-        ],
+        "alternatives": [],
         "why": [
             "1M token context window perfect for large PDFs/Docs",
             "Native multimodal support for images/charts",

@@ -117,10 +117,26 @@ def render():
                 st.write("**Detected PII Columns:**")
                 exclude_cols = st.multiselect("Select columns to EXCLUDE from masking:", pii_columns)
                 
+                # Default Rules
+                default_rules = """- Age: Replace with random ages (e.g., 25, 42, 38)
+- Income: Replace with masked values (e.g., "XXXXX", "MASKED", or random numbers)
+- Names: Replace with "Person_1", "Person_2", etc.
+- Emails: Replace with "user1@example.com", "user2@example.com"
+- Phone: Replace with "XXX-XXX-XXXX"
+- Addresses: Replace with "123 Main St", "456 Oak Ave" """
+
+                with st.expander("⚙️ Configure Masking Rules", expanded=False):
+                    masking_rules = st.text_area(
+                        "Edit Masking Rules (Instructions for AI):",
+                        value=default_rules,
+                        height=200,
+                        help="Analyze the rules above and modify them to control how specific PII is masked."
+                    )
+                
                 if st.button("Mask PII"):
                     with st.spinner("Masking PII data..."):
                         try:
-                            masked_df = mask_pii_data(df, exclude_cols)
+                            masked_df = mask_pii_data(df, exclude_cols, masking_rules)
                             st.success("✅ PII data masked!")
                             st.dataframe(masked_df.head())
                             

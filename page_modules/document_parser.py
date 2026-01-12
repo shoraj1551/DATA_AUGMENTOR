@@ -23,23 +23,30 @@ def render():
     if "parser_mode" not in st.session_state:
         st.session_state.parser_mode = None # 'chat' or 'extract' or None
         
-    # --- Sidebar Controls ---
-    with st.sidebar:
-        st.header("📂 Document Input")
-        uploaded_files = st.file_uploader(
-            "Upload Files (PDF, Docx, Excel, PPT, Txt)", 
-            type=['pdf', 'docx', 'doc', 'pptx', 'xlsx', 'csv', 'txt', 'md', 'json', 'png', 'jpg'],
-            accept_multiple_files=True
-        )
+    # --- Main Layout (No Sidebar) ---
+    
+    # 1. Document Input Section
+    with st.container():
+        st.subheader("📂 Document Input")
         
-        # Reset button always visible
-        if st.button("🔄 Reset Session", type="secondary"):
-            st.session_state.doc_text = ""
-            st.session_state.chat_history = []
-            st.session_state.question_count = 0
-            st.session_state.story_highlights = []
-            st.session_state.parser_mode = None
-            st.rerun()
+        col_up, col_reset = st.columns([0.85, 0.15])
+        
+        with col_up:
+            uploaded_files = st.file_uploader(
+                "Upload Files to Begin (PDF, Docx, Excel, PPT, Txt)", 
+                type=['pdf', 'docx', 'doc', 'pptx', 'xlsx', 'csv', 'txt', 'md', 'json', 'png', 'jpg'],
+                accept_multiple_files=True,
+                label_visibility="collapsed"
+            )
+        
+        with col_reset:
+            if st.button("🔄 Reset", type="secondary", help="Clear all data and start over"):
+                st.session_state.doc_text = ""
+                st.session_state.chat_history = []
+                st.session_state.question_count = 0
+                st.session_state.story_highlights = []
+                st.session_state.parser_mode = None
+                st.rerun()
 
     # --- Processing Logic (Run once on upload) ---
     if uploaded_files and not st.session_state.doc_text:
@@ -63,7 +70,8 @@ def render():
     # 1. No Documents
     if not st.session_state.doc_text:
         # Show a placeholder or instructions
-        st.info("👈 Please upload your documents in the sidebar to begin.")
+        if not uploaded_files:
+             st.info("👆 Upload your documents above to unlock the features below.")
         
         # Show feature preview cards (Non-interactive until upload)
         c1, c2 = st.columns(2)

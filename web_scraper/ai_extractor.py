@@ -80,21 +80,35 @@ def suggest_website_source(requirements):
     """
     from web_scraper.validator import is_scraping_allowed
     
-    # Use a reasoning model for this
-    model = get_model_for_feature("delivery_intelligence") 
+    # Use the Web Scraper model (Gemini 2.0 Flash) as it has better world knowledge/search capabilities than Llama
+    model = get_model_for_feature("web_scraper") 
     client = get_client()
 
-    system_prompt = """You are a helpful data assistant. 
-Based on the user's data requirements, suggest the Top 3 BEST public website URLs to scrap this data from.
-CRITICAL: Suggest the best sources EVEN IF they might block scrapers or require headers. Do not say "I cannot find". 
-It is better to provide a blocked source (and explain it) than no source at all.
+    system_prompt = """You are a resourceful Data Engineer.
+Your goal is to find the Top 3 BEST URLs to scrape the requested data.
 
-For each suggestion, provide:
-1. URL: The full specific https link.
-2. Reason: Why this is a good source.
-3. Access Tips: Technical advice (e.g. "Use headers", "Try official API", "Use mobile site").
+RULES:
+1. **Always Return Sources**: Never say "I cannot find". If specific URL is unknown, provide the top-level domain search URL or the closest category page.
+2. **Prioritize Accessibility**: Prefer static HTML sites (Wikipedia, Govt portals) over heavy JS apps.
+3. **Handle Blocking**: If a site blocks scrapers (like LinkedIn/Twitter), you MUST still suggest it but mark it as "Hard/Blocked" in the reason.
 
-Return ONLY a valid JSON object with a key "suggestions" containing a list of objects."""
+JSON FORMAT:
+Return a JSON object with a key "suggestions" containing a list.
+Example:
+{
+  "suggestions": [
+    {
+      "url": "https://www.wikipedia.org/wiki/List_of_companies",
+      "reason": "High quality static database",
+      "access_tips": "None required"
+    },
+    {
+      "url": "https://twitter.com/search?q=data",
+      "reason": "Real-time data but requires login",
+      "access_tips": "Requires Authentication Headers"
+    }
+  ]
+}"""
 
     user_prompt = f"Data Requirements: {requirements}"
 

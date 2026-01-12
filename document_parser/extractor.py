@@ -5,40 +5,55 @@ import pptx
 import openpyxl
 import pandas as pd
 from PIL import Image
-import pytesseract
+import os
 
-def extract_text_from_file(uploaded_file):
+def extract_text_from_file(file_input):
     """
     Unified extractor for various file types.
-    params: uploaded_file (Streamlit UploadedFile)
+    params: file_input (Streamlit UploadedFile OR str/Path for local file)
     returns: str (Extracted Text)
     """
-    file_type = uploaded_file.name.split('.')[-1].lower()
+    # Determine filename and file object
+    if isinstance(file_input, str):
+        filename = os.path.basename(file_input)
+        file_obj = open(file_input, 'rb')
+        should_close = True
+    else:
+        # Streamlit UploadedFile
+        filename = file_input.name
+        file_obj = file_input
+        should_close = False
+        
+    file_type = filename.split('.')[-1].lower()
     
     try:
         if file_type == 'pdf':
-            return _extract_pdf(uploaded_file)
+            text = _extract_pdf(file_obj)
         elif file_type in ['docx', 'doc']:
-            return _extract_docx(uploaded_file)
+            text = _extract_docx(file_obj)
         elif file_type in ['pptx', 'ppt']:
-            return _extract_pptx(uploaded_file)
+            text = _extract_pptx(file_obj)
         elif file_type in ['xlsx', 'xls']:
-            return _extract_excel(uploaded_file)
+            text = _extract_excel(file_obj)
         elif file_type == 'csv':
-             df = pd.read_csv(uploaded_file)
-             return df.to_string()
+             df = pd.read_csv(file_obj)
+             text = df.to_string()
         elif file_type in ['txt', 'md', 'py', 'json']:
-            return str(uploaded_file.read().decode("utf-8"))
-        # Image support will be direct processing in QA engine for multimodal,
-        # but for text extraction we can try simple OCR later if needed.
-        # For now, return a placeholder for images saying "IMAGE_CONTENT" 
-        # so the QA engine knows to treat it as an image input.
+            # Reset pointer for text reading if needed, though usually at 0
+            if hasattr(file_obj, 'seek'): file_obj.seek(0)
+            text = str(file_obj.read().decode("utf-8"))
         elif file_type in ['png', 'jpg', 'jpeg']:
-            return "Valid Image File" 
+            text = "Valid Image File" 
         else:
-            return f"Unsupported file type: {file_type}"
+            text = f"Unsupported file type: {file_type}"
+            
+        return text
+        
     except Exception as e:
-        return f"Error extracting file: {str(e)}"
+        return f"Error extracting file {filename}: {str(e)}"
+    finally:
+        if should_close:
+            file_obj.close()
 
 def _extract_pdf(file):
     pdf = pypdf.PdfReader(file)

@@ -29,28 +29,79 @@ def render():
     with st.container():
         st.subheader("📂 Document Input")
         
-        col_up, col_reset = st.columns([0.85, 0.15])
+        # Tabs for input method
+        tab_upload, tab_folder = st.tabs(["📄 File Upload", "📁 Local Folder"])
         
-        with col_up:
-            uploaded_files = st.file_uploader(
-                "Upload Files to Begin (PDF, Docx, Excel, PPT, Txt)", 
-                type=['pdf', 'docx', 'doc', 'pptx', 'xlsx', 'csv', 'txt', 'md', 'json', 'png', 'jpg'],
-                accept_multiple_files=True,
-                label_visibility="collapsed"
-            )
-        
-        with col_reset:
-            if st.button("🔄 Reset", type="secondary", help="Clear all data and start over"):
-                st.session_state.doc_text = ""
-                st.session_state.chat_history = []
-                st.session_state.question_count = 0
-                st.session_state.story_highlights = []
-                st.session_state.parser_mode = None
-                st.rerun()
+        # --- TAB 1: Streamlit Uploader ---
+        with tab_upload:
+            col_up, col_reset = st.columns([0.85, 0.15])
+            with col_up:
+                uploaded_files = st.file_uploader(
+                    "Select files (drag & drop)", 
+                    type=['pdf', 'docx', 'doc', 'pptx', 'xlsx', 'csv', 'txt', 'md', 'json', 'png', 'jpg'],
+                    accept_multiple_files=True,
+                    label_visibility="collapsed",
+                    key="uploader_widget"
+                )
+            with col_reset:
+                if st.button("🔄 Reset", key="reset_upload", type="secondary", help="Clear session"):
+                     st.session_state.doc_text = ""
+                     st.session_state.chat_history = []
+                     st.session_state.question_count = 0
+                     st.session_state.story_highlights = []
+                     st.session_state.parser_mode = None
+                     st.rerun()
 
-    # --- Processing Logic (Run once on upload) ---
+        # --- TAB 2: Local Folder Input ---
+        with tab_folder:
+            col_path, col_btn = st.columns([0.8, 0.2])
+            with col_path:
+                folder_path = st.text_input("Enter local folder path:", placeholder=r"C:\Users\Name\Documents\ProjectX")
+            with col_btn:
+                load_folder = st.button("Load Folder", type="primary", use_container_width=True)
+            
+            if load_folder and folder_path:
+                import os
+                if os.path.exists(folder_path) and os.path.isdir(folder_path):
+                    with st.spinner(f"Scanning {folder_path}..."):
+                        found_files = []
+                        valid_exts = ['.pdf', '.docx', '.doc', '.pptx', '.xlsx', '.csv', '.txt', '.md', '.json']
+                        for root, dirs, files in os.walk(folder_path):
+                            for file in files:
+                                if any(file.lower().endswith(ext) for ext in valid_exts):
+                                    found_files.append(os.path.join(root, file))
+                        
+                        if found_files:
+                            st.success(f"Found {len(found_files)} documents. Processing...")
+                            full_text = ""
+                            # Limit to avoiding freezing (e.g. max 20 files for now or just process all)
+                            # For safety let's process up to 20 files
+                            processed_count = 0
+                            for fp in found_files: # Process all
+                                try:
+                                    text = extractor.extract_text_from_file(fp)
+                                    full_text += f"\n--- File: {os.path.basename(fp)} ---\n{text}"
+                                    processed_count += 1
+                                except Exception as e:
+                                    st.warning(f"Skipped {os.path.basename(fp)}: {e}")
+                                    
+                            st.session_state.doc_text = full_text
+                            
+                            # Generate Story
+                            if full_text.strip():
+                                highlights = qa_engine.generate_story_highlights(full_text)
+                                st.session_state.story_highlights = highlights
+                            
+                            st.rerun()
+                        else:
+                            st.warning("No supported files found in this directory.")
+                else:
+                    st.error("Invalid Directory Path.")
+
+
+    # --- Processing Logic (for Tab 1 Uploader) ---
     if uploaded_files and not st.session_state.doc_text:
-        with st.spinner("Processing documents & Generating Story..."):
+        with st.spinner("Processing uploaded documents..."):
             full_text = ""
             for f in uploaded_files:
                 text = extractor.extract_text_from_file(f)
@@ -69,11 +120,7 @@ def render():
     
     # 1. No Documents
     if not st.session_state.doc_text:
-        # Show a placeholder or instructions
-        if not uploaded_files:
-             st.info("👆 Upload your documents above to unlock the features below.")
-        
-        # Show feature preview cards (Non-interactive until upload)
+         # Show feature preview cards (Non-interactive until upload)
         c1, c2 = st.columns(2)
         with c1:
             st.warning("💬 **Chat Q&A**: Ask questions to your PDF/Docs")

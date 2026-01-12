@@ -77,6 +77,13 @@ def render():
         col1, col2 = st.columns([3, 1])
         with col1:
             url = st.text_input("Enter Website URL:", key="scraper_url", placeholder="https://example.com/data")
+            
+            # Example Button
+            def set_example():
+                st.session_state.scraper_url = "http://books.toscrape.com/"
+            
+            st.button("📚 Try Example: Books To Scrape", on_click=set_example, type="secondary", help="Click to load a safe scraping sandbox")
+
         with col2:
             st.write("") # Spacer
             st.write("")

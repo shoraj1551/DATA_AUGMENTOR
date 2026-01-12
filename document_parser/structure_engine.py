@@ -60,3 +60,34 @@ def parse_structured_data(text, requirements):
         
     except Exception as e:
         raise Exception(f"Extraction Error: {str(e)}")
+
+def suggest_schema(text):
+    """
+    Introspect document and suggest available fields for extraction.
+    """
+    model = get_model_for_feature("document_parser")
+    client = get_client()
+    
+    system_prompt = """You are a Data Architect.
+    Analyze the document excerpt and suggest a list of available data fields that can be extracted.
+    Return a list of strings (field names).
+    Example: ["Invoice Number", "Date", "Total Amount", "Vendor Name"]
+    """
+    
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Document Snippet:\n{text[:50000]}"}
+            ],
+             response_format={"type": "json_object"}
+        )
+        data = json.loads(response.choices[0].message.content)
+        
+        if isinstance(data, list): return data
+        if "fields" in data: return data["fields"]
+        return list(data.values())[0] if data else []
+        
+    except Exception:
+        return []

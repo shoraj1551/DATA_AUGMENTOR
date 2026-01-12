@@ -21,15 +21,22 @@ except ImportError:
 # 1. Streamlit secrets
 # 2. Environment variable
 # -------------------------------------------------------
-OPENROUTER_API_KEY = None
-
 # 1. Try Streamlit Config (Secrets)
 try:
     import streamlit as st
     if hasattr(st, "secrets"):
-        # Access safely to avoid KeyErrors if secrets.toml doesn't exist
+        # Try exact match first, then lowercase
         OPENROUTER_API_KEY = st.secrets.get("OPENROUTER_API_KEY")
-except Exception:
+        if not OPENROUTER_API_KEY:
+             OPENROUTER_API_KEY = st.secrets.get("openrouter_api_key")
+             
+        # Debug log for server console
+        if OPENROUTER_API_KEY:
+            print("INFO: Successfully loaded OPENROUTER_API_KEY from secrets.")
+        else:
+            print("INFO: Streamlit secrets found but no OPENROUTER_API_KEY detected.")
+except Exception as e:
+    print(f"INFO: Could not load secrets: {e}")
     pass
 
 if not OPENROUTER_API_KEY:

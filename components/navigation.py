@@ -33,8 +33,8 @@ def render_sidebar():
     # Update sidebar selection from session state logic (bi-directional sync)
     selection = st.sidebar.radio(
         "Go to:",
-        ["Home", "DataAugmentor", "File Comparison", "Code Review", "Delivery Intelligence", "Web Data Scraper"],
-        index=["Home", "DataAugmentor", "File Comparison", "Code Review", "Delivery Intelligence", "Web Data Scraper"].index(st.session_state.tool) if st.session_state.tool in ["Home", "DataAugmentor", "File Comparison", "Code Review", "Delivery Intelligence", "Web Data Scraper"] else 0,
+        ["Home", "DataAugmentor", "File Comparison", "Code Review", "Delivery Intelligence", "Web Data Scraper", "Document Parser"],
+        index=["Home", "DataAugmentor", "File Comparison", "Code Review", "Delivery Intelligence", "Web Data Scraper", "Document Parser"].index(st.session_state.tool) if st.session_state.tool in ["Home", "DataAugmentor", "File Comparison", "Code Review", "Delivery Intelligence", "Web Data Scraper", "Document Parser"] else 0,
         label_visibility="collapsed",
         key="sidebar_tool_radio"
     )

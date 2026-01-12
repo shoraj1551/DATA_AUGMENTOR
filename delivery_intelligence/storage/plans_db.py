@@ -90,22 +90,65 @@ class PlansDB:
             with self._lock_file(f):
                 json.dump(plans, f, indent=2, ensure_ascii=False)
     
-    def save_plan(self, plan: dict) -> str:
-        """Save a new plan or update existing one"""
+    
+    def _add_audit_entry(self, plan: dict, action: str, user: str = "system", details: dict = None):
+        """
+        Add an audit trail entry to a plan.
+        
+        Args:
+            plan: The plan to add audit entry to
+            action: Action performed (created, updated, status_changed, task_updated, deleted)
+            user: User who performed the action
+            details: Additional details about the change
+        """
+        from datetime import datetime
+        
+        if "history" not in plan:
+            plan["history"] = []
+        
+        entry = {
+            "timestamp": datetime.now().isoformat(),
+            "user": user,
+            "action": action,
+            "details": details or {}
+        }
+        
+        plan["history"].append(entry)
+        
+        # Keep only last 100 entries to prevent unbounded growth
+        if len(plan["history"]) > 100:
+            plan["history"] = plan["history"][-100:]
+    
+    def save_plan(self, plan: dict, user: str = "system") -> str:
+        """
+        Save a new plan or update existing one with audit trail.
+        
+        Args:
+            plan: Plan to save
+            user: User performing the save operation
+        """
         plans = self._read_db()
         
         # Check if plan already exists
         existing_index = None
+        existing_plan = None
         for i, p in enumerate(plans):
             if p.get("plan_id") == plan.get("plan_id"):
                 existing_index = i
+                existing_plan = p
                 break
         
         if existing_index is not None:
-            # Update existing plan
+            # Update existing plan - log what changed
+            changes = {}
+            if existing_plan.get("status") != plan.get("status"):
+                changes["status"] = {"old": existing_plan.get("status"), "new": plan.get("status")}
+            
+            self._add_audit_entry(plan, "updated", user, changes)
             plans[existing_index] = plan
         else:
             # Add new plan
+            self._add_audit_entry(plan, "created", user)
             plans.append(plan)
         
         self._write_db(plans)
@@ -128,9 +171,22 @@ class PlansDB:
         plans = self._read_db()
         return [p for p in plans if p.get("status") == status]
     
-    def delete_plan(self, plan_id: str) -> bool:
-        """Delete a plan by ID"""
+    def delete_plan(self, plan_id: str, user: str = "system") -> bool:
+        """
+        Delete a plan by ID with audit trail.
+        
+        Args:
+            plan_id: ID of plan to delete
+            user: User performing the deletion
+        """
         plans = self._read_db()
+        
+        # Find and log deletion
+        for plan in plans:
+            if plan.get("plan_id") == plan_id:
+                self._add_audit_entry(plan, "deleted", user)
+                break
+        
         filtered_plans = [p for p in plans if p.get("plan_id") != plan_id]
         
         if len(filtered_plans) < len(plans):
@@ -138,33 +194,58 @@ class PlansDB:
             return True
         return False
     
-    def update_plan_status(self, plan_id: str, new_status: str) -> bool:
-        """Update plan status"""
+    def update_plan_status(self, plan_id: str, new_status: str, user: str = "system") -> bool:
+        """
+        Update plan status with audit trail.
+        
+        Args:
+            plan_id: ID of plan to update
+            new_status: New status value
+            user: User performing the update
+        """
         plan = self.get_plan(plan_id)
         if plan:
+            old_status = plan.get("status")
             plan["status"] = new_status
-            self.save_plan(plan)
+            
+            self._add_audit_entry(plan, "status_changed", user, {
+                "old_status": old_status,
+                "new_status": new_status
+            })
+            
+            self.save_plan(plan, user)
             return True
         return False
 
-    def update_task_stats(self, plan_id: str, task_id: str, updates: dict) -> bool:
+    def update_task_stats(self, plan_id: str, task_id: str, updates: dict, user: str = "system") -> bool:
         """
-        Update specific fields of a task (status, actuals, comments)
+        Update specific fields of a task with audit trail.
         
         Args:
             plan_id: ID of the plan
             task_id: ID of the task to update
-            updates: Dictionary of fields to update (e.g. {"status": "in_progress", "actual_hours": 4})
+            updates: Dictionary of fields to update
+            user: User performing the update
         """
         plan = self.get_plan(plan_id)
         if not plan:
             return False
             
         found = False
+        task_title = None
+        old_values = {}
+        
         for epic in plan.get("epics", []):
             for story in epic.get("stories", []):
                 for task in story.get("tasks", []):
                     if task.get("task_id") == task_id:
+                        task_title = task.get("title")
+                        
+                        # Track old values for audit
+                        for key in updates.keys():
+                            if key in task:
+                                old_values[key] = task[key]
+                        
                         # Update fields
                         for key, value in updates.items():
                              task[key] = value
@@ -174,6 +255,14 @@ class PlansDB:
             if found: break
             
         if found:
-            self.save_plan(plan)
+            # Add audit entry
+            self._add_audit_entry(plan, "task_updated", user, {
+                "task_id": task_id,
+                "task_title": task_title,
+                "updates": updates,
+                "old_values": old_values
+            })
+            
+            self.save_plan(plan, user)
             return True
         return False

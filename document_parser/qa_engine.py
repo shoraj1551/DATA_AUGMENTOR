@@ -58,17 +58,15 @@ def generate_story_highlights(text, image_data=None):
     
     system_prompt = """You are an expert Analyst. 
     Analyze the provided document content and extract the "Top 5 Key Information" as a Story.
-    Focus on the most valuable, high-level insights.
     
-    Output Format:
-    Return a list of 5 strings.
-    Example:
-    [
-      "Revenue grew by 20% compared to last year.",
-      "New product launch is scheduled for Q3.",
-      ...
-    ]
-    Return ONLY valid JSON."""
+    CRITICAL INSTRUCTIONS:
+    1. Returns EXACTLY 5 bullet points. No more, no less.
+    2. Focus on the most valuable, high-level insights.
+    3. Output MUST be a valid JSON list of strings.
+    
+    Output Format Example:
+    ["Insight 1", "Insight 2", "Insight 3", "Insight 4", "Insight 5"]
+    """
     
     user_content = []
     if text:
@@ -83,14 +81,38 @@ def generate_story_highlights(text, image_data=None):
             ],
             response_format={"type": "json_object"}
         )
-        data = json.loads(response.choices[0].message.content)
         
+        content = response.choices[0].message.content
+        
+        # Robust JSON Parsing
+        try:
+            data = json.loads(content)
+        except json.JSONDecodeError:
+            # Fallback: Try to find list in string if JSON wrapping failed (common with smaller models)
+            import re
+            match = re.search(r'\[.*\]', content, re.DOTALL)
+            if match:
+                data = json.loads(match.group(0))
+            else:
+                return ["Error: Could not parse AI response."]
+
         # Handle various return formats
-        if isinstance(data, list): return data
-        if "highlights" in data: return data["highlights"]
-        if "story" in data: return data["story"]
-        # Fallback
-        return list(data.values())[0] if data else []
+        highlights = []
+        if isinstance(data, list): 
+            highlights = data
+        elif isinstance(data, dict):
+            # Check for common keys
+            for key in ["highlights", "story", "points", "insights"]:
+                if key in data and isinstance(data[key], list):
+                    highlights = data[key]
+                    break
+            # If no key matched, try first list value
+            if not highlights:
+                 first_list = next((v for v in data.values() if isinstance(v, list)), [])
+                 highlights = first_list
+
+        # STRICTLY ENFORCE LIMIT
+        return highlights[:5] if highlights else []
         
     except Exception as e:
         return [f"Server Busy (Rate Limit). Please try again in a moment. ({str(e)[:100]}...)"]

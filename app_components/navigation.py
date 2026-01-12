@@ -47,7 +47,8 @@ def render_sidebar():
     
     # Check API key using the centralized settings
     from config import settings
-    if not settings.OPENROUTER_API_KEY:
+    # Use dynamic getter to ensure we hit secrets even if module loaded earlier
+    if not settings.get_api_key():
         st.sidebar.warning("⚠️ API Key missing")
         st.sidebar.markdown(
             """

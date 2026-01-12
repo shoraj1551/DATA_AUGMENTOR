@@ -39,6 +39,27 @@ except Exception as e:
     print(f"INFO: Could not load secrets: {e}")
     pass
 
+def get_api_key():
+    """
+    Dynamically retrieve API Key from secrets or env.
+    Preferred over static variable to avoid import-time issues.
+    """
+    # 1. Try static variable if already set
+    if OPENROUTER_API_KEY:
+        return OPENROUTER_API_KEY
+        
+    # 2. Try Secrets (Runtime check)
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets"):
+            key = st.secrets.get("OPENROUTER_API_KEY") or st.secrets.get("openrouter_api_key")
+            if key: return key
+    except:
+        pass
+        
+    # 3. Try Environment
+    return os.getenv("OPENROUTER_API_KEY")
+
 if not OPENROUTER_API_KEY:
     # Try getting from os environment again as fallback
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")

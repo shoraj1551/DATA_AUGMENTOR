@@ -27,45 +27,50 @@ def render():
             st.write("")
             suggest_btn = st.button("✨ Suggest Source", type="secondary")
         
+        # Initialize suggestions if not present
+        if "ai_suggestions" not in st.session_state:
+            st.session_state.ai_suggestions = []
+
         if suggest_btn and requirements:
             with st.spinner("AI is researching top sources & checking permissions..."):
                 from web_scraper import ai_extractor
-                suggestions = ai_extractor.suggest_website_source(requirements)
+                st.session_state.ai_suggestions = ai_extractor.suggest_website_source(requirements)
+        
+        # Render from Session State
+        suggestions = st.session_state.ai_suggestions
+        if suggestions:
+            # Filter out empty URLs just in case
+            valid_suggestions = [s for s in suggestions if s.get("url")]
             
-            if suggestions:
-                # Filter out empty URLs just in case
-                valid_suggestions = [s for s in suggestions if s.get("url")]
+            if valid_suggestions:
+                expander_title = f"🔍 AI Suggestions ({len(valid_suggestions)})"
                 
-                if valid_suggestions:
-                    st.success(f"Found {len(valid_suggestions)} sources:")
-                    
-                    for idx, item in enumerate(valid_suggestions):
-                        with st.container():
-                            # Header with Badge
-                            c1, c2 = st.columns([4, 1])
-                            with c1:
-                                st.markdown(f"**{idx+1}. [{item['url']}]({item['url']})**")
-                            with c2:
-                                if item['is_allowed']:
-                                    st.markdown('<span style="background:#dcfce7; color:#166534; padding:2px 8px; border-radius:12px; font-size:0.8em;">Allowed</span>', unsafe_allow_html=True)
-                                else:
-                                    st.markdown('<span style="background:#fee2e2; color:#991b1b; padding:2px 8px; border-radius:12px; font-size:0.8em;">Blocked</span>', unsafe_allow_html=True)
-                            
-                            # Set description and tips
-                            st.caption(f"Reason: {item['reason']}")
-                            if item.get("access_tips"):
-                                st.info(f"💡 **Access Tip**: {item['access_tips']}")
-                            
-                            # Use button
-                            if st.button("📋 Use this Source", key=f"use_{idx}"):
-                                 st.session_state.scraper_url = item['url']
-                                 st.rerun() # Rerun to update the input field immediately
-                            
-                            st.divider()
-                else:
-                    st.warning("AI returned a response but no valid URLs were found.")
+                for idx, item in enumerate(valid_suggestions):
+                    with st.container():
+                        # Header with Badge
+                        c1, c2 = st.columns([4, 1])
+                        with c1:
+                            st.markdown(f"**{idx+1}. [{item['url']}]({item['url']})**")
+                        with c2:
+                            if item['is_allowed']:
+                                st.markdown('<span style="background:#dcfce7; color:#166534; padding:2px 8px; border-radius:12px; font-size:0.8em;">Allowed</span>', unsafe_allow_html=True)
+                            else:
+                                st.markdown('<span style="background:#fee2e2; color:#991b1b; padding:2px 8px; border-radius:12px; font-size:0.8em;">Blocked</span>', unsafe_allow_html=True)
+                        
+                        # Set description and tips
+                        st.caption(f"Reason: {item['reason']}")
+                        if item.get("access_tips"):
+                            st.info(f"💡 **Access Tip**: {item['access_tips']}")
+                        
+                        # Use button
+                        if st.button("📋 Use this Source", key=f"use_{idx}"):
+                             st.session_state.scraper_url = item['url']
+                             st.rerun() # Rerun to update the input field immediately
+                        
+                        st.divider()
             else:
-                st.error("AI could not generate a response. Please check your query.")
+                if suggest_btn: # Only show error if just clicked
+                    st.warning("AI returned a response but no valid URLs were found.")
 
     # Input Section
     with st.container():

@@ -143,12 +143,12 @@ def render():
             # Prepare team list with IDs for the backend
             final_team_roster = []
             for idx, member in enumerate(st.session_state.team_roster):
-                if member["name"]:  # Only include if name is present
+                if member.get("name"):  # Only include if name is present
                     final_team_roster.append({
                         "id": f"eng_{idx}",
-                        "name": member["name"],
-                        "role": member["role"],
-                        "level": member["level"]
+                        "name": member.get("name"),
+                        "role": member.get("role", "Full Stack"),
+                        "level": member.get("level", "mid")
                     })
         
         # Generate button

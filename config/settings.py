@@ -31,14 +31,12 @@ except Exception:
     pass
 
 if not OPENROUTER_API_KEY:
+    # Try getting from os environment again as fallback
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-
+# Warning instead of crash if missing
 if not OPENROUTER_API_KEY:
-    raise RuntimeError(
-        "OPENROUTER_API_KEY is missing. "
-        "Set it in .streamlit/secrets.toml or as an environment variable."
-    )
+    print("WARNING: OPENROUTER_API_KEY is not set. AI features will be disabled.")
 
 # -------------------------------------------------------
 # OpenRouter / Model Configuration
@@ -175,6 +173,9 @@ def validate_openrouter_api_key():
     Validate OpenRouter API key by making a lightweight authenticated call.
     This is the ONLY reliable validation method.
     """
+    if not OPENROUTER_API_KEY:
+        return False
+
     try:
         from openai import OpenAI
 
@@ -185,12 +186,8 @@ def validate_openrouter_api_key():
 
         # Lightweight authenticated request
         client.models.list()
+        return True
 
     except Exception as e:
-        raise RuntimeError(
-            "OPENROUTER_API_KEY is present but invalid, expired, or unauthorized."
-        ) from e
-
-
-# Validate once at startup
-validate_openrouter_api_key()
+        print(f"API Validation Failed: {e}")
+        return False

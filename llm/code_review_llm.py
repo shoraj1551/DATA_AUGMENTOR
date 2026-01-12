@@ -92,14 +92,16 @@ def generate_functional_tests_with_llm(code: str, language: str, test_framework:
     """
     system_prompt = f"""You are an expert test engineer for {language}.
 
-Generate FUNCTIONAL/INTEGRATION tests using {test_framework}.
+Analyze the code complexity.
+1. If the code is a simple pure function where Unit Tests and Functional Tests would be IDENTICAL, return the exact string: "SAME AS UNIT TEST"
+2. Otherwise, generate FUNCTIONAL/INTEGRATION tests using {test_framework}.
 
-Requirements:
+Requirements for Functional Tests:
 - Focus on WORKFLOWS and interactions between components
 - Do NOT mock internal logic; test the real flow
 - Test end-to-end scenarios (e.g. valid input -> process -> output)
 - Test integration points
-- Return ONLY the test code, no explanations."""
+- Return ONLY the test code (or "SAME AS UNIT TEST")."""
 
     user_prompt = f"""Generate {test_framework} FUNCTIONAL tests for this {language} code:
 
@@ -107,7 +109,7 @@ Requirements:
 {code[:5000]}
 ```
 
-Return complete, runnable test code."""
+Return complete, runnable test code or "SAME AS UNIT TEST"."""
 
     response = get_client().chat.completions.create(
         model=get_model_for_feature("code_review"),
@@ -127,7 +129,7 @@ def generate_failure_scenarios_with_llm(code: str, language: str) -> str:
     """
     system_prompt = f"""You are a security and QA expert for {language}.
 
-Generate the TOP 5 failure scenarios that could break this code.
+Generate ALL potential failure scenarios that could break this code. Be exhaustive.
 Focus on:
 - Edge case inputs
 - Boundary values

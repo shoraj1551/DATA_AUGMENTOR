@@ -203,7 +203,10 @@ def render():
                     with st.spinner("Generating functional tests..."):
                         try:
                             tests = generate_functional_tests_with_llm(code, language, structure['test_framework'])
-                            if tests:
+                            
+                            if tests and "SAME AS UNIT TEST" in tests:
+                                st.info("ℹ️ Functional tests are identical to Unit Tests for this code section.")
+                            elif tests:
                                 st.code(tests, language=language)
                                 st.download_button("📥 Download Tests", str(tests), f"functional_test_{uploaded_file.name}")
                             else:

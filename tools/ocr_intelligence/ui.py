@@ -18,6 +18,43 @@ def render():
         status="new"
     )
     
+    # Check Tesseract installation
+    if 'tesseract_checked' not in st.session_state:
+        st.session_state.tesseract_checked = False
+        st.session_state.tesseract_available = False
+    
+    if not st.session_state.tesseract_checked:
+        from tools.ocr_intelligence.installer import TesseractInstaller
+        
+        with st.spinner("Checking Tesseract OCR installation..."):
+            installer = TesseractInstaller()
+            
+            if not installer.check_installation():
+                st.warning("⚠️ Tesseract OCR not found. Attempting automatic installation...")
+                
+                with st.spinner("Installing Tesseract OCR... This may take a few minutes."):
+                    result = installer.install()
+                
+                if result['success']:
+                    st.success(f"✅ {result['message']}")
+                    st.session_state.tesseract_available = True
+                    st.info("🔄 Please refresh the page to use OCR features.")
+                else:
+                    st.error(f"❌ {result['message']}")
+                    if 'manual_instructions' in result:
+                        st.markdown("### Manual Installation Required")
+                        st.markdown(result['manual_instructions'])
+                    st.session_state.tesseract_available = False
+            else:
+                st.session_state.tesseract_available = True
+            
+            st.session_state.tesseract_checked = True
+    
+    # Only show OCR interface if Tesseract is available
+    if not st.session_state.tesseract_available:
+        st.error("❌ Tesseract OCR is not available. Please install it manually using the instructions above.")
+        return
+    
     # Initialize OCR engine
     if 'ocr_engine' not in st.session_state:
         st.session_state.ocr_engine = OCREngine()

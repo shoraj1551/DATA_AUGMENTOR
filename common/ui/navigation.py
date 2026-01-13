@@ -27,7 +27,8 @@ TOOL_REGISTRY = {
     "file_comparison": {
         "name": "File Comparison",
         "category": "utilities",
-        "description": "Compare datasets precisely"
+        "description": "Compare datasets precisely",
+        "status": "stable"
     },
     "document_parser": {
         "name": "Document Parser",

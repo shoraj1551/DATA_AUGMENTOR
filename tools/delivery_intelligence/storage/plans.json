@@ -1,0 +1,463 @@
+[
+  {
+    "plan_id": "72ecfe72-4dba-4de8-9d81-10d9a4b5b1a0",
+    "title": "Toodledee Story Telling App",
+    "description": "An app allowing users to record, share and enjoy children's stories",
+    "status": "draft",
+    "created_at": "2026-01-12T00:36:33.714075",
+    "engineer_level": "mid",
+    "estimated_total_days": 60,
+    "epics": [
+      {
+        "epic_id": "a314b3f0-15c0-42a6-b243-839a56e74ddf",
+        "title": "Epic: Story Creation",
+        "description": "User can record, edit and save stories",
+        "estimated_days": 18,
+        "stories": [
+          {
+            "story_id": "ed62041f-b4da-492c-8031-309335a5c38d",
+            "title": "Story 1: Story Recording",
+            "description": "User can record stories with audio and video",
+            "estimated_hours": 32,
+            "acceptance_criteria": [
+              "User can start and stop recording",
+              "User can view recorded story"
+            ],
+            "tasks": [
+              {
+                "task_id": "47aa3014-0677-4f1d-b0a5-da76b24f6c27",
+                "title": "Task: Implement Audio Recording",
+                "description": "Implement audio recording functionality",
+                "estimated_hours": 8,
+                "status": "not_started"
+              },
+              {
+                "task_id": "6ab3645e-9994-46ec-831a-6dedc7c4a3f1",
+                "title": "Task: Implement Video Recording",
+                "description": "Implement video recording functionality",
+                "estimated_hours": 8,
+                "status": "not_started"
+              },
+              {
+                "task_id": "00fb2ade-9a8f-4401-a933-3b20e2e190bf",
+                "title": "Task: Integrate Recording Controls",
+                "description": "Integrate recording controls into app",
+                "estimated_hours": 16,
+                "status": "not_started"
+              }
+            ]
+          },
+          {
+            "story_id": "f76a465a-642d-4f1f-ad65-ae1aeb2cc33a",
+            "title": "Story 2: Story Editing",
+            "description": "User can edit recorded stories",
+            "estimated_hours": 24,
+            "acceptance_criteria": [
+              "User can trim audio and video",
+              "User can split recordings"
+            ],
+            "tasks": [
+              {
+                "task_id": "4388bfd8-d666-4a5c-853e-ec1ba4d343f7",
+                "title": "Task: Implement Audio Trimming",
+                "description": "Implement audio trimming functionality",
+                "estimated_hours": 6,
+                "status": "not_started"
+              },
+              {
+                "task_id": "fd59d981-3459-4371-b6ef-35b72b1cd561",
+                "title": "Task: Implement Video Trimming",
+                "description": "Implement video trimming functionality",
+                "estimated_hours": 6,
+                "status": "not_started"
+              },
+              {
+                "task_id": "b856b70f-9217-489d-9248-8d5404421f88",
+                "title": "Task: Integrate Split Feature",
+                "description": "Integrate split feature into app",
+                "estimated_hours": 12,
+                "status": "not_started"
+              }
+            ]
+          },
+          {
+            "story_id": "6ac527f0-976b-4c88-b542-fc223f7d8dca",
+            "title": "Story 3: Story Saving",
+            "description": "User can save stories to storage",
+            "estimated_hours": 20,
+            "acceptance_criteria": [
+              "User can save story to app storage",
+              "User can share story to cloud storage"
+            ],
+            "tasks": [
+              {
+                "task_id": "124b16bb-5ffc-4f86-a58c-b2976722154c",
+                "title": "Task: Implement Local Storage",
+                "description": "Implement local storage for stories",
+                "estimated_hours": 5,
+                "status": "not_started"
+              },
+              {
+                "task_id": "2fae3125-7f47-445b-b14d-c9e2da882972",
+                "title": "Task: Integrate Cloud Storage",
+                "description": "Integrate cloud storage for story sharing",
+                "estimated_hours": 10,
+                "status": "not_started"
+              },
+              {
+                "task_id": "e7b732cd-ee0f-4093-a9e3-9a4830713cc7",
+                "title": "Task: Handle Storage Error Handling",
+                "description": "Implement error handling for storage",
+                "estimated_hours": 5,
+                "status": "not_started"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "epic_id": "c3a6cfc0-a232-4374-809e-989205bf9fe7",
+        "title": "Epic: Story Sharing",
+        "description": "User can share and discover stories",
+        "estimated_days": 16,
+        "stories": [
+          {
+            "story_id": "37097032-2754-4abc-b263-43665f693bef",
+            "title": "Story 4: Story Sharing",
+            "description": "User can share stories with others",
+            "estimated_hours": 20,
+            "acceptance_criteria": [
+              "User can share story via social media",
+              "User can share story via email"
+            ],
+            "tasks": [
+              {
+                "task_id": "89e45739-2109-4868-a1aa-6df107bafad6",
+                "title": "Task: Integrate Social Media Sharing",
+                "description": "Integrate social media sharing",
+                "estimated_hours": 6,
+                "status": "not_started"
+              },
+              {
+                "task_id": "1e5f6797-eedd-4d5c-aa11-803f3dbbf0ac",
+                "title": "Task: Implement Email Sharing",
+                "description": "Implement email sharing functionality",
+                "estimated_hours": 6,
+                "status": "not_started"
+              },
+              {
+                "task_id": "29d44167-8ed9-468d-8804-48c0226386e6",
+                "title": "Task: Handle Sharing Error Handling",
+                "description": "Implement error handling for sharing",
+                "estimated_hours": 8,
+                "status": "not_started"
+              }
+            ]
+          },
+          {
+            "story_id": "cef32793-33c0-478f-ac84-f8297bb78363",
+            "title": "Story 5: Story Discovery",
+            "description": "User can discover and browse stories",
+            "estimated_hours": 20,
+            "acceptance_criteria": [
+              "User can browse stories by category",
+              "User can search for stories by keyword"
+            ],
+            "tasks": [
+              {
+                "task_id": "4080d775-e1ff-40ac-9caf-889c68b7da09",
+                "title": "Task: Implement Story Categorization",
+                "description": "Implement story categorization",
+                "estimated_hours": 5,
+                "status": "not_started"
+              },
+              {
+                "task_id": "36247386-c8d2-4123-b013-36288e87c88b",
+                "title": "Task: Implement Search Functionality",
+                "description": "Implement search functionality",
+                "estimated_hours": 6,
+                "status": "not_started"
+              },
+              {
+                "task_id": "ea41b4ab-3243-4769-bc53-99e274f10652",
+                "title": "Task: Handle Discovery Error Handling",
+                "description": "Implement error handling for discovery",
+                "estimated_hours": 9,
+                "status": "not_started"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "epic_id": "c167a9e3-8fbf-4dfb-b511-2aaff2ec82ba",
+        "title": "Epic: Story Viewing",
+        "description": "User can view and enjoy stories",
+        "estimated_days": 12,
+        "stories": [
+          {
+            "story_id": "05a0c8be-f876-470a-849a-cef10ed8866c",
+            "title": "Story 6: Story Playback",
+            "description": "User can play back recorded stories",
+            "estimated_hours": 16,
+            "acceptance_criteria": [
+              "User can play back audio and video",
+              "User can pause and resume playback"
+            ],
+            "tasks": [
+              {
+                "task_id": "32f7031f-9445-4c90-b785-d7ea7e1081ea",
+                "title": "Task: Implement Audio Playback",
+                "description": "Implement audio playback functionality",
+                "estimated_hours": 4,
+                "status": "not_started"
+              },
+              {
+                "task_id": "af925e83-8124-47a5-b9f4-3835e0986a2a",
+                "title": "Task: Implement Video Playback",
+                "description": "Implement video playback functionality",
+                "estimated_hours": 4,
+                "status": "not_started"
+              },
+              {
+                "task_id": "ff76ee79-40f7-458b-a04d-cdab229b4e21",
+                "title": "Task: Integrate Playback Controls",
+                "description": "Integrate playback controls into app",
+                "estimated_hours": 8,
+                "status": "not_started"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "epic_id": "ea1cc645-ce98-41aa-b511-f03fa338fc72",
+        "title": "Epic: Story Analytics",
+        "description": "User can view analytics for their stories",
+        "estimated_days": 8,
+        "stories": [
+          {
+            "story_id": "868db6cb-ce0c-4303-9f16-272c5e626b5c",
+            "title": "Story 7: Story Views",
+            "description": "User can view views for their stories",
+            "estimated_hours": 10,
+            "acceptance_criteria": [
+              "User can view story views in dashboard",
+              "User can filter views by date"
+            ],
+            "tasks": [
+              {
+                "task_id": "797adb41-7ac1-4851-bb4b-9bd06b925312",
+                "title": "Task: Implement View Tracking",
+                "description": "Implement view tracking",
+                "estimated_hours": 3,
+                "status": "not_started"
+              },
+              {
+                "task_id": "5f778160-864f-431d-ae20-4cbc7a11addd",
+                "title": "Task: Implement Dashboard",
+                "description": "Implement dashboard for viewing views",
+                "estimated_hours": 4,
+                "status": "not_started"
+              },
+              {
+                "task_id": "11f08799-90ab-44af-bba9-7228d7a22edd",
+                "title": "Task: Handle View Filtering",
+                "description": "Implement filtering for views",
+                "estimated_hours": 3,
+                "status": "not_started"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "plan_id": "1850833a-a481-45d9-8ca8-ddd6fc8def5c",
+    "title": "ToodleMe Story Telling App",
+    "description": "ToodleMe is a story telling app for toddlers with interactive narratives and rich media content.",
+    "status": "draft",
+    "created_at": "2026-01-12T00:38:44.264419",
+    "engineer_level": "mid",
+    "estimated_total_days": 24,
+    "epics": [
+      {
+        "epic_id": "e1b2efbb-605c-46d7-a236-cb2a450ce310",
+        "title": "User Interface",
+        "description": "Design and implement a visually appealing and interactive user interface for the app.",
+        "estimated_days": 6,
+        "stories": [
+          {
+            "story_id": "0fd7a2b0-80b3-42a2-bcbc-5c59bf981467",
+            "title": "Epic Navigation",
+            "description": "Implement navigation between scenes and story chapters.",
+            "estimated_hours": 96,
+            "acceptance_criteria": [
+              " scenes navigation implemented",
+              "story chapters navigation implemented"
+            ],
+            "tasks": [
+              {
+                "task_id": "ce389f57-72d0-4d73-9709-8f33f090a94b",
+                "title": "Scene Change Animation",
+                "description": "Implement fade-in and fade-out animation for scene changes.",
+                "estimated_hours": 24,
+                "status": "not_started"
+              },
+              {
+                "task_id": "1e276079-df1c-4a23-9fb4-c8de07ceec67",
+                "title": "Chapter Navigation",
+                "description": "Implement buttons and navigation for story chapters.",
+                "estimated_hours": 18,
+                "status": "not_started"
+              },
+              {
+                "task_id": "e73c772f-bcc5-4673-9f63-0538050834b4",
+                "title": "Interactive Elements",
+                "description": "Implement interactive elements on screen (e.g. buttons, taps).",
+                "estimated_hours": 18,
+                "status": "not_started"
+              },
+              {
+                "task_id": "46246129-9efb-4ab6-b962-f0193feac09e",
+                "title": "Scene Rendering",
+                "description": "Implement rendering of scenes with correct media and assets.",
+                "estimated_hours": 20,
+                "status": "not_started"
+              },
+              {
+                "task_id": "c24c0fb3-debb-4eee-882c-0d66ca7c99a7",
+                "title": "Navigation Arrow Indicators",
+                "description": "Display navigation arrow indicators on screen.",
+                "estimated_hours": 16,
+                "status": "not_started"
+              }
+            ]
+          },
+          {
+            "story_id": "a0344570-10a8-4327-8bf8-bebd4613e2a0",
+            "title": "Content Library Management",
+            "description": "Manage and implement a content library system for uploading and managing story content.",
+            "estimated_hours": 72,
+            "acceptance_criteria": [
+              "content library implemented",
+              "content upload and management features implemented"
+            ],
+            "tasks": [
+              {
+                "task_id": "26ea867b-c714-4d3b-8c87-2f02ba8caefb",
+                "title": "Content Uploader",
+                "description": "Implement a content uploader for adding story content.",
+                "estimated_hours": 24,
+                "status": "not_started"
+              },
+              {
+                "task_id": "a6723efc-e37b-436e-bebe-afc018019eaf",
+                "title": "Content Manager",
+                "description": "Implement a content manager for managing uploaded story content.",
+                "estimated_hours": 24,
+                "status": "not_started"
+              },
+              {
+                "task_id": "089c93ae-64c7-4568-becf-9049268d8aa1",
+                "title": "Content Categories",
+                "description": "Implement categories for organizing story content.",
+                "estimated_hours": 16,
+                "status": "not_started"
+              },
+              {
+                "task_id": "0a97e4c6-ab4a-462b-9a51-9cccfc622da2",
+                "title": "Content Filtering",
+                "description": "Implement filtering options for story content.",
+                "estimated_hours": 16,
+                "status": "not_started"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "epic_id": "3759f023-bdc3-4fab-bce9-49b4afaa8db5",
+        "title": "Platform Integration",
+        "description": "Integrate the app with popular platforms like social media, email, and analytics services.",
+        "estimated_days": 6,
+        "stories": [
+          {
+            "story_id": "f58a2a86-2c78-45c9-8e86-9bb1d2d202de",
+            "title": "Social Media Integration",
+            "description": "Integrate the app with social media platforms for sharing stories.",
+            "estimated_hours": 48,
+            "acceptance_criteria": [
+              "social media integration implemented",
+              "sharing stories functionality implemented"
+            ],
+            "tasks": [
+              {
+                "task_id": "32f08b29-39ca-433a-a9a6-3c9ee02e78b9",
+                "title": "Facebook Integration",
+                "description": "Integrate the app with Facebook for sharing stories.",
+                "estimated_hours": 12,
+                "status": "not_started"
+              },
+              {
+                "task_id": "fc74ed66-9484-4975-8097-c211195213b6",
+                "title": "Instagram Integration",
+                "description": "Integrate the app with Instagram for sharing stories.",
+                "estimated_hours": 12,
+                "status": "not_started"
+              },
+              {
+                "task_id": "9b75f564-b02c-4231-bb4c-511f35cee7e8",
+                "title": "Twitter Integration",
+                "description": "Integrate the app with Twitter for sharing stories.",
+                "estimated_hours": 12,
+                "status": "not_started"
+              },
+              {
+                "task_id": "035743c3-69ff-4ffc-8eaa-b7845322c40a",
+                "title": "Story Sharing UI",
+                "description": "Implement UI for sharing stories on social media.",
+                "estimated_hours": 12,
+                "status": "not_started"
+              }
+            ]
+          },
+          {
+            "story_id": "f1620fd7-faa6-4bec-b7cd-7bcbaaa9944b",
+            "title": "Email Integration",
+            "description": "Integrate the app with email services for sending story notifications.",
+            "estimated_hours": 24,
+            "acceptance_criteria": [
+              "email integration implemented",
+              "story notifications functionality implemented"
+            ],
+            "tasks": [
+              {
+                "task_id": "500cac5a-eea2-4ccb-b777-47674a6a0f16",
+                "title": "Email Login",
+                "description": "Implement email login functionality to send story notifications.",
+                "estimated_hours": 8,
+                "status": "not_started"
+              },
+              {
+                "task_id": "a9a2a635-9119-4447-ac9d-e68f82e97d89",
+                "title": "Notification Setup",
+                "description": "Set up notification settings for story notifications.",
+                "estimated_hours": 8,
+                "status": "not_started"
+              },
+              {
+                "task_id": "cf38b127-6558-4875-a61b-b50f903453dd",
+                "title": "Story Notification UI",
+                "description": "Implement UI for displaying story notifications.",
+                "estimated_hours": 8,
+                "status": "not_started"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

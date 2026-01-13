@@ -28,11 +28,13 @@ tool = navigation.render_sidebar()
 if tool == "Home":
     home.render()
 elif tool == "DataAugmentor":
-    data_augmentor.render()
+    from tools.data_augmentor import ui
+    ui.render()
 elif tool == "File Comparison":
     file_comparison.render()
 elif tool == "Code Review":
-    code_review.render()
+    from tools.code_review import ui
+    ui.render()
 elif tool == "Delivery Intelligence":
     delivery_intelligence.render()
 elif tool == "Web Data Scraper":

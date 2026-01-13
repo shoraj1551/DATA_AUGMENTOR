@@ -19,7 +19,7 @@ def render():
     # Quick Stats
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Tools Available", "6", delta="2 new")
+        st.metric("Tools Available", "11", delta="5 new")
     with col2:
         st.metric("AI Models", "3", delta="Gemini 2.0")
     with col3:
@@ -33,7 +33,8 @@ def render():
     categories = {
         "core": {"name": "Core Tools", "desc": "Essential AI-powered productivity tools"},
         "utilities": {"name": "Utilities", "desc": "Specialized tools for data operations"},
-        "planning": {"name": "Planning & Intelligence", "desc": "Project management and delivery tools"}
+        "planning": {"name": "Planning & Intelligence", "desc": "Project management and delivery tools"},
+        "analytics": {"name": "Analytics & Insights", "desc": "Data profiling, quality, and intelligence tools"}
     }
     
     for category_id, category_info in categories.items():
@@ -79,6 +80,8 @@ def render_tool_card(tool_id, tool_data):
         status_emoji = "✨ New"
     elif status == "stable":
         status_emoji = "✅ Stable"
+    elif status == "gamma":
+        status_emoji = "🧪 Gamma"
     
     # Container for card
     with st.container():

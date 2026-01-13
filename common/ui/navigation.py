@@ -43,6 +43,12 @@ TOOL_REGISTRY = {
         "description": "Analyze policies and validate claims automatically",
         "status": "gamma"
     },
+    "contact_intelligence": {
+        "name": "Contact Intelligence",
+        "category": "utilities",
+        "description": "Find and score business contacts with AI",
+        "status": "gamma"
+    },
     "delivery_intelligence": {
         "name": "Delivery Intelligence",
         "category": "planning",

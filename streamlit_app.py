@@ -67,6 +67,9 @@ elif tool == "knowledge_base":
 elif tool == "insurance_claims":
     from tools.insurance_claims import ui
     ui.render()
+elif tool == "contact_intelligence":
+    from tools.contact_intelligence import ui
+    ui.render()
 
 # Render footer
 footer.render_footer()

@@ -1,0 +1,226 @@
+"""
+Data Profiling & Auto-EDA UI
+Automated dataset profiling and insights
+"""
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from common.ui.navigation import render_page_header
+from tools.data_profiling.profiler import DataProfiler
+from tools.data_profiling.insights import InsightGenerator
+
+
+def render():
+    """Render the Data Profiling page"""
+    render_page_header(
+        title="Data Profiling & Auto-EDA",
+        subtitle="Automatically profile datasets and generate actionable insights",
+        icon="📊",
+        status="gamma"
+    )
+    
+    st.info("🧪 **Gamma Version** - Experimental feature. Feedback welcome!")
+    
+    # File Upload
+    st.markdown("### 📤 Upload Dataset")
+    uploaded_file = st.file_uploader(
+        "Choose a CSV file",
+        type=['csv'],
+        help="Upload a CSV file to automatically profile"
+    )
+    
+    if uploaded_file:
+        # Load dataset
+        try:
+            df = pd.read_csv(uploaded_file)
+            st.success(f"✅ Loaded dataset: {len(df)} rows × {len(df.columns)} columns")
+            
+            # Sampling options
+            with st.expander("⚙️ Profiling Settings"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    sample_size = st.number_input(
+                        "Sample size (0 = all rows)",
+                        min_value=0,
+                        max_value=len(df),
+                        value=min(10000, len(df)),
+                        help="Number of rows to analyze (for large datasets)"
+                    )
+                with col2:
+                    generate_insights = st.checkbox(
+                        "Generate AI Insights",
+                        value=True,
+                        help="Use LLM to generate insights (requires API key)"
+                    )
+            
+            # Profile button
+            if st.button("🔍 Profile Dataset", type="primary", use_container_width=True):
+                with st.spinner("Profiling dataset..."):
+                    # Create profiler
+                    profiler = DataProfiler(
+                        df=df,
+                        sample_size=sample_size if sample_size > 0 else None
+                    )
+                    
+                    # Generate profile
+                    profile = profiler.profile_dataset()
+                    anomalies = profiler.detect_anomalies()
+                    
+                    # Store in session state
+                    st.session_state.profile = profile
+                    st.session_state.anomalies = anomalies
+                    st.session_state.df = df
+                    
+                    # Generate insights if requested
+                    if generate_insights:
+                        with st.spinner("Generating AI insights..."):
+                            insight_gen = InsightGenerator()
+                            insights = insight_gen.generate_insights(profile, anomalies)
+                            st.session_state.insights = insights
+                
+                st.success("✅ Profiling complete!")
+                st.rerun()
+            
+            # Display results if available
+            if 'profile' in st.session_state:
+                display_profile_results(
+                    st.session_state.profile,
+                    st.session_state.anomalies,
+                    st.session_state.get('insights'),
+                    st.session_state.df
+                )
+                
+        except Exception as e:
+            st.error(f"❌ Error loading dataset: {str(e)}")
+    
+    else:
+        # Empty state
+        st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
+        st.info("👆 Upload a CSV file to get started with automated profiling!")
+        
+        # Example features
+        st.markdown("### 💡 What You'll Get")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown("""
+            **📈 Statistics**
+            - Column profiles
+            - Missing data analysis
+            - Duplicate detection
+            """)
+        
+        with col2:
+            st.markdown("""
+            **🔍 Anomalies**
+            - Outlier detection
+            - Data quality issues
+            - Pattern recognition
+            """)
+        
+        with col3:
+            st.markdown("""
+            **🤖 AI Insights**
+            - Automated analysis
+            - Recommendations
+            - Next steps
+            """)
+
+
+def display_profile_results(profile, anomalies, insights, df):
+    """Display profiling results"""
+    
+    # AI Insights (if available)
+    if insights:
+        st.markdown("---")
+        st.markdown("## 🤖 AI-Generated Insights")
+        
+        st.markdown(f"**Summary:** {insights['summary']}")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### 🔍 Key Findings")
+            for finding in insights['key_findings']:
+                st.markdown(f"• {finding}")
+        
+        with col2:
+            st.markdown("### 💡 Recommendations")
+            for rec in insights['recommendations']:
+                st.markdown(f"• {rec}")
+        
+        if insights.get('quality_issues'):
+            st.markdown("### ⚠️ Data Quality Issues")
+            for issue in insights['quality_issues']:
+                st.warning(f"• {issue}")
+    
+    # Overview
+    st.markdown("---")
+    st.markdown("## 📊 Dataset Overview")
+    
+    col1, col2, col3, col4, col5 = st.columns(5)
+    with col1:
+        st.metric("Rows", f"{profile['overview']['rows']:,}")
+    with col2:
+        st.metric("Columns", profile['overview']['columns'])
+    with col3:
+        st.metric("Memory", f"{profile['overview']['memory_usage_mb']} MB")
+    with col4:
+        st.metric("Duplicates", profile['overview']['duplicate_rows'])
+    with col5:
+        st.metric("Missing", profile['overview']['total_missing'])
+    
+    # Anomalies
+    if anomalies:
+        st.markdown("---")
+        st.markdown("## 🚨 Anomalies Detected")
+        
+        for anomaly in anomalies:
+            severity_color = {
+                'high': '🔴',
+                'medium': '🟡',
+                'low': '🟢'
+            }.get(anomaly['severity'], '⚪')
+            
+            st.warning(f"{severity_color} **{anomaly['type']}** in `{anomaly['column']}`: {anomaly['detail']}")
+    
+    # Column Statistics
+    st.markdown("---")
+    st.markdown("## 📋 Column Statistics")
+    
+    columns_df = pd.DataFrame(profile['columns'])
+    st.dataframe(columns_df, use_container_width=True, height=400)
+    
+    # Missing Data Visualization
+    if profile['missing_data']['columns_with_missing'] > 0:
+        st.markdown("---")
+        st.markdown("## 📉 Missing Data Analysis")
+        
+        missing_data = profile['missing_data']['missing_by_column']
+        fig = px.bar(
+            x=list(missing_data.keys()),
+            y=list(missing_data.values()),
+            labels={'x': 'Column', 'y': 'Missing Count'},
+            title='Missing Values by Column'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # Download Report
+    st.markdown("---")
+    st.markdown("## 📥 Export Report")
+    
+    import json
+    report = {
+        'profile': profile,
+        'anomalies': anomalies,
+        'insights': insights if insights else {}
+    }
+    
+    st.download_button(
+        label="📥 Download JSON Report",
+        data=json.dumps(report, indent=2),
+        file_name="data_profile_report.json",
+        mime="application/json",
+        use_container_width=True
+    )

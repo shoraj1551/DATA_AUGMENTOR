@@ -48,6 +48,12 @@ TOOL_REGISTRY = {
         "category": "utilities",
         "description": "Extract text from images and scanned documents",
         "status": "beta"
+    },
+    "data_profiling": {
+        "name": "Data Profiling & Auto-EDA",
+        "category": "analytics",
+        "description": "Automatically profile datasets and generate insights",
+        "status": "gamma"
     }
 }
 
@@ -64,6 +70,10 @@ CATEGORIES = {
     "planning": {
         "label": "Planning",
         "order": 3
+    },
+    "analytics": {
+        "label": "Analytics",
+        "order": 4
     }
 }
 
@@ -229,6 +239,8 @@ def render_navigation():
                     status_badge = " 🔶"
                 elif status == "new":
                     status_badge = " ✨"
+                elif status == "gamma":
+                    status_badge = " 🧪"
                 
                 # Create columns for button and star
                 col1, col2 = st.columns([0.85, 0.15])
@@ -313,7 +325,8 @@ def render_page_header(title, subtitle, icon="", status=""):
         status_colors = {
             "beta": ("🔶", "#f59e0b", "#fef3c7"),
             "new": ("✨", "#3b82f6", "#dbeafe"),
-            "stable": ("✅", "#10b981", "#d1fae5")
+            "stable": ("✅", "#10b981", "#d1fae5"),
+            "gamma": ("🧪", "#8b5cf6", "#ede9fe")
         }
         emoji, color, bg = status_colors.get(status.lower(), ("", "#64748b", "#f1f5f9"))
         header_html += f'''

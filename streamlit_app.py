@@ -52,6 +52,9 @@ elif tool == "document_parser":
 elif tool == "ocr_intelligence":
     from tools.ocr_intelligence import ui
     ui.render()
+elif tool == "data_profiling":
+    from tools.data_profiling import ui
+    ui.render()
 
 # Render footer
 footer.render_footer()

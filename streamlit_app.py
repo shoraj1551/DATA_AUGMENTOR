@@ -61,6 +61,9 @@ elif tool == "dq_rules":
 elif tool == "requirement_interpreter":
     from tools.requirement_interpreter import ui
     ui.render()
+elif tool == "knowledge_base":
+    from tools.knowledge_base import ui
+    ui.render()
 
 # Render footer
 footer.render_footer()

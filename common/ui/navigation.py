@@ -66,6 +66,12 @@ TOOL_REGISTRY = {
         "category": "analytics",
         "description": "Translate business questions into data specifications",
         "status": "gamma"
+    },
+    "knowledge_base": {
+        "name": "Knowledge Base Builder",
+        "category": "analytics",
+        "description": "Capture and query project knowledge with natural language",
+        "status": "gamma"
     }
 }
 

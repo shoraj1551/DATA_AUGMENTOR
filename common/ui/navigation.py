@@ -47,7 +47,7 @@ TOOL_REGISTRY = {
         "name": "OCR Image Intelligence",
         "category": "utilities",
         "description": "Extract text from images and scanned documents",
-        "status": "new"
+        "status": "beta"
     }
 }
 

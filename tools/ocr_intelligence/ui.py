@@ -15,7 +15,7 @@ def render():
         title="OCR Image Intelligence",
         subtitle="Extract text from images and scanned documents with AI-powered OCR",
         icon="🖼️",
-        status="new"
+        status="beta"
     )
     
     # Check Tesseract installation

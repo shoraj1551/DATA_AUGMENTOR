@@ -64,6 +64,9 @@ elif tool == "requirement_interpreter":
 elif tool == "knowledge_base":
     from tools.knowledge_base import ui
     ui.render()
+elif tool == "insurance_claims":
+    from tools.insurance_claims import ui
+    ui.render()
 
 # Render footer
 footer.render_footer()

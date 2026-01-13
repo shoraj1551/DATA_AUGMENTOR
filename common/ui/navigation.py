@@ -34,8 +34,14 @@ TOOL_REGISTRY = {
     "web_scraper": {
         "name": "Web Scraper",
         "category": "utilities",
-        "description": "Extract web data compliantly",
+        "description": "Compliant web scraping with AI extraction",
         "status": "beta"
+    },
+    "insurance_claims": {
+        "name": "Insurance Claims Review",
+        "category": "utilities",
+        "description": "Analyze policies and validate claims automatically",
+        "status": "gamma"
     },
     "delivery_intelligence": {
         "name": "Delivery Intelligence",

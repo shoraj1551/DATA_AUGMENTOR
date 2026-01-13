@@ -7,11 +7,6 @@ import streamlit as st
 
 # Tool Registry - Single source of truth for all tools
 TOOL_REGISTRY = {
-    "home": {
-        "name": "Home",
-        "category": "core",
-        "description": "Dashboard and tool overview"
-    },
     "code_review": {
         "name": "Code Review",
         "category": "core",
@@ -122,7 +117,23 @@ def render_navigation():
         </div>
     """, unsafe_allow_html=True)
     
-    st.sidebar.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+    st.sidebar.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+    
+    # Home Button - Separate from tools
+    is_home_active = st.session_state.tool == "home"
+    home_button_type = "primary" if is_home_active else "secondary"
+    
+    if st.sidebar.button(
+        "🏠 Home",
+        key="nav_home_button",
+        type=home_button_type,
+        use_container_width=True,
+        help="Return to dashboard"
+    ):
+        go_to_tool("home")
+        st.rerun()
+    
+    st.sidebar.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
     
     # Favorites Section (if any favorites exist)
     if st.session_state.favorite_tools:

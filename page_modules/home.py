@@ -135,7 +135,7 @@ def get_tool_features(tool_id):
         "document_parser": [
             "Extract text from PDF/TXT/PPT",
             "Chat with documents (RAG)",
-            "OCR tool coming soon"
+            "Multi-format support"
         ],
         "web_scraper": [
             "Compliant web scraping",
@@ -146,6 +146,31 @@ def get_tool_features(tool_id):
             "AI execution planning",
             "Epic/Story/Task generation",
             "Team workload distribution"
+        ],
+        "ocr_intelligence": [
+            "AI-powered OCR",
+            "Multi-language support",
+            "Table & receipt parsing"
+        ],
+        "data_profiling": [
+            "Automated dataset profiling",
+            "Anomaly detection",
+            "Audience-aware narratives"
+        ],
+        "dq_rules": [
+            "Auto-generate DQ rules",
+            "Validation code generation",
+            "Business criticality tagging"
+        ],
+        "requirement_interpreter": [
+            "Business → Data translation",
+            "SQL specification generation",
+            "Clarifying questions"
+        ],
+        "knowledge_base": [
+            "Project memory system",
+            "Natural language QA",
+            "Onboarding guide generation"
         ]
     }
     return features_map.get(tool_id, [])
@@ -159,6 +184,11 @@ def get_tool_stats(tool_id):
         "file_comparison": {"uses": "850", "rating": "4.7★"},
         "document_parser": {"uses": "640", "rating": "4.6★"},
         "web_scraper": {"uses": "420", "rating": "4.5★"},
-        "delivery_intelligence": {"uses": "380", "rating": "4.7★"}
+        "delivery_intelligence": {"uses": "380", "rating": "4.7★"},
+        "ocr_intelligence": {"uses": "NEW", "rating": "Beta"},
+        "data_profiling": {"uses": "NEW", "rating": "Gamma"},
+        "dq_rules": {"uses": "NEW", "rating": "Gamma"},
+        "requirement_interpreter": {"uses": "NEW", "rating": "Gamma"},
+        "knowledge_base": {"uses": "NEW", "rating": "Gamma"}
     }
     return stats_map.get(tool_id, {"uses": "0", "rating": "N/A"})

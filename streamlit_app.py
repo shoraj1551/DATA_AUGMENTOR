@@ -70,6 +70,15 @@ elif tool == "insurance_claims":
 elif tool == "contact_intelligence":
     from tools.contact_intelligence import ui
     ui.render()
+elif tool == "company_intelligence":
+    from tools.company_intelligence import ui
+    ui.render()
+elif tool == "selling_opportunity":
+    from tools.selling_opportunity import ui
+    ui.render()
+elif tool == "strategic_sales":
+    from tools.strategic_sales import ui
+    ui.render()
 
 # Render footer
 footer.render_footer()

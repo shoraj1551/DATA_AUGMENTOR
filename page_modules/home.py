@@ -175,6 +175,41 @@ def get_tool_features(tool_id):
             "Project memory system",
             "Natural language QA",
             "Onboarding guide generation"
+        ],
+        "insurance_claims": [
+            "Policy analysis & rules extraction",
+            "Claims validation & eligibility",
+            "Loophole identification"
+        ],
+        "contact_intelligence": [
+            "AI-powered contact generation",
+            "Email pattern inference",
+            "Confidence scoring & verification"
+        ],
+        "company_intelligence": [
+            "Structured company profiles",
+            "Natural language Q&A",
+            "Revenue & hiring signals"
+        ],
+        "selling_opportunity": [
+            "Market signal detection",
+            "Opportunity ranking & prioritization",
+            "Buying intent indicators"
+        ],
+        "company_intelligence": [
+            "Structured company profiles",
+            "Natural language Q&A",
+            "Revenue & hiring signals"
+        ],
+        "selling_opportunity": [
+            "Market signal detection",
+            "Opportunity ranking",
+            "Buying intent indicators"
+        ],
+        "strategic_sales": [
+            "4-in-1 sales intelligence",
+            "Decision history & competitive narrative",
+            "Procurement signals & market risk"
         ]
     }
     return features_map.get(tool_id, [])
@@ -193,6 +228,11 @@ def get_tool_stats(tool_id):
         "data_profiling": {"uses": "NEW", "rating": "Gamma"},
         "dq_rules": {"uses": "NEW", "rating": "Gamma"},
         "requirement_interpreter": {"uses": "NEW", "rating": "Gamma"},
-        "knowledge_base": {"uses": "NEW", "rating": "Gamma"}
+        "knowledge_base": {"uses": "NEW", "rating": "Gamma"},
+        "insurance_claims": {"uses": "NEW", "rating": "Gamma"},
+        "contact_intelligence": {"uses": "NEW", "rating": "Gamma"},
+        "company_intelligence": {"uses": "NEW", "rating": "Gamma"},
+        "selling_opportunity": {"uses": "NEW", "rating": "Gamma"},
+        "strategic_sales": {"uses": "NEW", "rating": "Gamma"}
     }
     return stats_map.get(tool_id, {"uses": "0", "rating": "N/A"})

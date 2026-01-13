@@ -84,6 +84,24 @@ TOOL_REGISTRY = {
         "category": "analytics",
         "description": "Capture and query project knowledge with natural language",
         "status": "gamma"
+    },
+    "company_intelligence": {
+        "name": "Company Intelligence",
+        "category": "sales",
+        "description": "Structured company profiles with natural language Q&A",
+        "status": "gamma"
+    },
+    "selling_opportunity": {
+        "name": "Selling Opportunity Finder",
+        "category": "sales",
+        "description": "Identify selling opportunities from market signals",
+        "status": "gamma"
+    },
+    "strategic_sales": {
+        "name": "Strategic Sales Intelligence",
+        "category": "sales",
+        "description": "4-in-1: Decision history, competitive narrative, procurement & risk analysis",
+        "status": "gamma"
     }
 }
 
@@ -102,8 +120,12 @@ CATEGORIES = {
         "order": 3
     },
     "analytics": {
-        "label": "Analytics",
+        "label": "Analytics & Insights",
         "order": 4
+    },
+    "sales": {
+        "label": "Sales Intelligence",
+        "order": 5
     }
 }
 

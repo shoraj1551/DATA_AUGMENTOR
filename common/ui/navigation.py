@@ -146,20 +146,42 @@ def render_navigation():
         category_container = st.sidebar.container()
         
         with category_container:
-            # Category header button
-            col1, col2 = st.columns([0.9, 0.1])
-            with col1:
-                st.markdown(
-                    f'<div style="font-size: 0.7rem; font-weight: 600; color: var(--color-slate-500); text-transform: uppercase; letter-spacing: 0.05em; margin: 1rem 0.5rem 0.5rem; cursor: pointer;">{category_label}</div>',
-                    unsafe_allow_html=True
-                )
-            with col2:
-                if st.button(arrow, key=f"collapse_{category_id}", help=f"Toggle {category_label}"):
-                    if is_collapsed:
-                        st.session_state.collapsed_categories.discard(category_id)
-                    else:
-                        st.session_state.collapsed_categories.add(category_id)
-                    st.rerun()
+            # Category header with collapse button
+            st.markdown(f"""
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin: 1rem 0.5rem 0.5rem;
+                    cursor: pointer;
+                ">
+                    <div style="
+                        font-size: 0.7rem;
+                        font-weight: 600;
+                        color: var(--color-slate-500);
+                        text-transform: uppercase;
+                        letter-spacing: 0.05em;
+                    ">
+                        {category_label}
+                    </div>
+                    <div style="
+                        font-size: 0.7rem;
+                        color: var(--color-slate-400);
+                        cursor: pointer;
+                        user-select: none;
+                    " onclick="this.click()">
+                        {arrow}
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # Small collapse button
+            if st.sidebar.button(arrow, key=f"collapse_{category_id}", help=f"Toggle {category_label}"):
+                if is_collapsed:
+                    st.session_state.collapsed_categories.discard(category_id)
+                else:
+                    st.session_state.collapsed_categories.add(category_id)
+                st.rerun()
             
             # Show tools if not collapsed
             if not is_collapsed:

@@ -31,16 +31,20 @@ elif tool == "DataAugmentor":
     from tools.data_augmentor import ui
     ui.render()
 elif tool == "File Comparison":
-    file_comparison.render()
+    from tools.file_comparison import ui
+    ui.render()
 elif tool == "Code Review":
     from tools.code_review import ui
     ui.render()
 elif tool == "Delivery Intelligence":
-    delivery_intelligence.render()
+    from tools.delivery_intelligence import ui
+    ui.render()
 elif tool == "Web Data Scraper":
-    web_scraper.render()
+    from tools.web_scraper import ui
+    ui.render()
 elif tool == "Document Parser":
-    document_parser.render()
+    from tools.document_parser import ui
+    ui.render()
 
 # Render footer
 footer.render_footer()

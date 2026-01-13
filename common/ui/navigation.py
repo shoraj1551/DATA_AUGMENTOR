@@ -60,6 +60,12 @@ TOOL_REGISTRY = {
         "category": "analytics",
         "description": "Generate intelligent data quality rules automatically",
         "status": "gamma"
+    },
+    "requirement_interpreter": {
+        "name": "Requirement Interpreter",
+        "category": "analytics",
+        "description": "Translate business questions into data specifications",
+        "status": "gamma"
     }
 }
 

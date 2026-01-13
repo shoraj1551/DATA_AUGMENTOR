@@ -58,6 +58,9 @@ elif tool == "data_profiling":
 elif tool == "dq_rules":
     from tools.dq_rules import ui
     ui.render()
+elif tool == "requirement_interpreter":
+    from tools.requirement_interpreter import ui
+    ui.render()
 
 # Render footer
 footer.render_footer()

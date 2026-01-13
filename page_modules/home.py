@@ -16,10 +16,15 @@ def render():
     
     st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
     
-    # Quick Stats
+    # Quick Stats - Dynamic
+    from common.ui.navigation import CATEGORIES
+    
+    total_tools = len([t for t in TOOL_REGISTRY.keys() if t != "home"])
+    new_tools = len([t for t in TOOL_REGISTRY.values() if t.get("status") in ["new", "gamma"]])
+    
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Tools Available", "11", delta="5 new")
+        st.metric("Tools Available", str(total_tools), delta=f"{new_tools} new")
     with col2:
         st.metric("AI Models", "3", delta="Gemini 2.0")
     with col3:
@@ -29,15 +34,11 @@ def render():
     
     st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
     
-    # Tool Cards by Category
-    categories = {
-        "core": {"name": "Core Tools", "desc": "Essential AI-powered productivity tools"},
-        "utilities": {"name": "Utilities", "desc": "Specialized tools for data operations"},
-        "planning": {"name": "Planning & Intelligence", "desc": "Project management and delivery tools"},
-        "analytics": {"name": "Analytics & Insights", "desc": "Data profiling, quality, and intelligence tools"}
-    }
+    # Tool Cards by Category - Dynamic from CATEGORIES
+    # Sort categories by order
+    sorted_categories = sorted(CATEGORIES.items(), key=lambda x: x[1].get("order", 999))
     
-    for category_id, category_info in categories.items():
+    for category_id, category_data in sorted_categories:
         # Get tools in this category
         category_tools = [
             (tool_id, tool_data) 
@@ -49,8 +50,8 @@ def render():
             continue
         
         # Category Header
-        st.markdown(f"## {category_info['name']}")
-        st.caption(category_info['desc'])
+        st.markdown(f"## {category_data['label']}")
+        st.caption(f"{len(category_tools)} tools available")
         st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
         
         # Tool Cards Grid

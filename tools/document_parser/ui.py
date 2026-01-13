@@ -10,7 +10,7 @@ from document_parser import extractor, qa_engine, structure_engine, rag_engine
 def render():
     render_page_header(
         title="Document Parser",
-        subtitle="Extract text, chat with documents, and generate insights",
+        subtitle="Extract text from PDF, TXT, and PowerPoint files (OCR tool coming soon for images)",
         icon="📄",
         status="beta"
     )

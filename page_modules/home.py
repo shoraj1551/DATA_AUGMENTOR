@@ -133,9 +133,9 @@ def get_tool_features(tool_id):
             "Export comparison reports"
         ],
         "document_parser": [
-            "Extract text from PDFs/Docs",
+            "Extract text from PDF/TXT/PPT",
             "Chat with documents (RAG)",
-            "Generate insights"
+            "OCR tool coming soon"
         ],
         "web_scraper": [
             "Compliant web scraping",

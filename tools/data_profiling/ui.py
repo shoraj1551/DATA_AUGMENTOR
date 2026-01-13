@@ -9,13 +9,14 @@ import plotly.graph_objects as go
 from common.ui.navigation import render_page_header
 from tools.data_profiling.profiler import DataProfiler
 from tools.data_profiling.insights import InsightGenerator
+from tools.data_profiling.narrator import InsightNarrator
 
 
 def render():
     """Render the Data Profiling page"""
     render_page_header(
         title="Data Profiling & Auto-EDA",
-        subtitle="Automatically profile datasets and generate actionable insights",
+        subtitle="Automatically profile datasets and generate actionable insights with narratives",
         icon="📊",
         status="gamma"
     )
@@ -38,7 +39,7 @@ def render():
             
             # Sampling options
             with st.expander("⚙️ Profiling Settings"):
-                col1, col2 = st.columns(2)
+                col1, col2, col3 = st.columns(3)
                 with col1:
                     sample_size = st.number_input(
                         "Sample size (0 = all rows)",
@@ -52,6 +53,12 @@ def render():
                         "Generate AI Insights",
                         value=True,
                         help="Use LLM to generate insights (requires API key)"
+                    )
+                with col3:
+                    audience = st.selectbox(
+                        "Narrative Audience",
+                        options=['technical', 'executive', 'business'],
+                        help="Target audience for narrative generation"
                     )
             
             # Profile button
@@ -78,6 +85,13 @@ def render():
                             insight_gen = InsightGenerator()
                             insights = insight_gen.generate_insights(profile, anomalies)
                             st.session_state.insights = insights
+                        
+                        # Generate narrative
+                        with st.spinner(f"Creating {audience} narrative..."):
+                            narrator = InsightNarrator()
+                            narrative = narrator.generate_narrative(profile, anomalies, audience)
+                            st.session_state.narrative = narrative
+                            st.session_state.audience = audience
                 
                 st.success("✅ Profiling complete!")
                 st.rerun()
@@ -88,7 +102,9 @@ def render():
                     st.session_state.profile,
                     st.session_state.anomalies,
                     st.session_state.get('insights'),
-                    st.session_state.df
+                    st.session_state.df,
+                    st.session_state.get('narrative'),
+                    st.session_state.get('audience', 'technical')
                 )
                 
         except Exception as e:
@@ -128,8 +144,37 @@ def render():
             """)
 
 
-def display_profile_results(profile, anomalies, insights, df):
+def display_profile_results(profile, anomalies, insights, df, narrative=None, audience='technical'):
     """Display profiling results"""
+    
+    # Narrative (if available) - Show first for executive summary
+    if narrative:
+        st.markdown("## 📖 Data Story")
+        st.markdown(f"*Tailored for {audience.title()} audience*")
+        
+        # Executive Summary
+        st.markdown("### Executive Summary")
+        st.info(narrative['executive_summary'])
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Key Insights
+            st.markdown("### 💡 Key Insights")
+            for insight in narrative['insights']:
+                st.success(f"✓ {insight}")
+            
+            # Recommended Actions
+            st.markdown("### 🎯 Recommended Actions")
+            for i, action in enumerate(narrative['actions'], 1):
+                st.markdown(f"{i}. {action}")
+        
+        with col2:
+            # Risk Alerts
+            if narrative.get('risks'):
+                st.markdown("### ⚠️ Risk Alerts")
+                for risk in narrative['risks']:
+                    st.warning(f"⚠️ {risk}")
     
     # AI Insights (if available)
     if insights:

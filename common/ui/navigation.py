@@ -54,6 +54,12 @@ TOOL_REGISTRY = {
         "category": "analytics",
         "description": "Automatically profile datasets and generate insights",
         "status": "gamma"
+    },
+    "dq_rules": {
+        "name": "DQ Rule Generator",
+        "category": "analytics",
+        "description": "Generate intelligent data quality rules automatically",
+        "status": "gamma"
     }
 }
 

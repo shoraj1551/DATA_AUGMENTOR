@@ -55,6 +55,9 @@ elif tool == "ocr_intelligence":
 elif tool == "data_profiling":
     from tools.data_profiling import ui
     ui.render()
+elif tool == "dq_rules":
+    from tools.dq_rules import ui
+    ui.render()
 
 # Render footer
 footer.render_footer()

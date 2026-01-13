@@ -461,21 +461,92 @@ def apply_custom_styles():
     }
     
     /* ============================================
-       ACCESSIBILITY
+       ANIMATIONS & TRANSITIONS
        ============================================ */
     
-    /* Focus Indicators */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(-20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    /* Smooth page transitions */
+    .main .block-container {
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    /* Card hover animations */
+    .tool-card {
+        transition: all var(--transition-base);
+    }
+    
+    .tool-card:hover {
+        animation: none; /* Prevent animation on hover */
+    }
+    
+    /* Button press effect */
+    .stButton > button:active {
+        transform: scale(0.98);
+    }
+    
+    /* ============================================
+       ACCESSIBILITY (WCAG 2.1 AA)
+       ============================================ */
+    
+    /* Focus Indicators - High Visibility */
     *:focus-visible {
-        outline: 2px solid var(--color-primary-600);
+        outline: 3px solid var(--color-primary-600);
         outline-offset: 2px;
+        border-radius: var(--radius-sm);
+    }
+    
+    /* Skip to main content link */
+    .skip-to-main {
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--color-primary-600);
+        color: white;
+        padding: 8px;
+        text-decoration: none;
+        z-index: 100;
+    }
+    
+    .skip-to-main:focus {
+        top: 0;
+    }
+    
+    /* Screen reader only content */
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
     }
     
     /* Reduced Motion */
     @media (prefers-reduced-motion: reduce) {
-        * {
+        *,
+        *::before,
+        *::after {
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
         }
     }
     
@@ -483,11 +554,24 @@ def apply_custom_styles():
     @media (prefers-contrast: high) {
         .tool-card {
             border-width: 2px;
+            border-color: currentColor;
         }
         
         .stButton > button {
             border-width: 2px;
+            border-color: currentColor;
         }
+        
+        /* Increase all border contrasts */
+        * {
+            border-color: currentColor !important;
+        }
+    }
+    
+    /* Dark Mode Support (Future) */
+    @media (prefers-color-scheme: dark) {
+        /* Placeholder for dark mode styles */
+        /* Will be implemented in future version */
     }
 </style>
 """, unsafe_allow_html=True)

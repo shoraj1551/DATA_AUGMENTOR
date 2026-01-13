@@ -174,6 +174,79 @@ FREE_MODELS_BY_USE_CASE = {
             "Native multimodal support for images/charts",
             "Strong reasoning for Q&A and extraction"
         ]
+    },
+    
+    # ===============================
+    # 7️⃣ Analytics & Insights Tools
+    # ===============================
+    "data_profiling": {
+        "default": "meta-llama/llama-3.1-8b-instruct",
+        "alternatives": [
+            "qwen/qwen-2.5-7b-instruct",
+            "mistralai/mistral-7b-instruct"
+        ]
+    },
+    "dq_rules": {
+        "default": "meta-llama/llama-3.1-8b-instruct",
+        "alternatives": [
+            "qwen/qwen-2.5-7b-instruct"
+        ]
+    },
+    "requirement_interpreter": {
+        "default": "meta-llama/llama-3.1-8b-instruct",
+        "alternatives": [
+            "qwen/qwen-2.5-7b-instruct"
+        ]
+    },
+    "knowledge_base": {
+        "default": "meta-llama/llama-3.1-8b-instruct",
+        "alternatives": [
+            "qwen/qwen-2.5-7b-instruct"
+        ]
+    },
+    
+    # ===============================
+    # 8️⃣ Sales Intelligence Tools
+    # ===============================
+    "company_intelligence": {
+        "default": "meta-llama/llama-3.1-8b-instruct",
+        "alternatives": [
+            "qwen/qwen-2.5-7b-instruct"
+        ]
+    },
+    "selling_opportunity": {
+        "default": "meta-llama/llama-3.1-8b-instruct",
+        "alternatives": [
+            "qwen/qwen-2.5-7b-instruct"
+        ]
+    },
+    "strategic_sales": {
+        "default": "meta-llama/llama-3.1-8b-instruct",
+        "alternatives": [
+            "qwen/qwen-2.5-7b-instruct"
+        ]
+    },
+    "contact_intelligence": {
+        "default": "meta-llama/llama-3.1-8b-instruct",
+        "alternatives": [
+            "qwen/qwen-2.5-7b-instruct"
+        ]
+    },
+    "insurance_claims": {
+        "default": "meta-llama/llama-3.1-8b-instruct",
+        "alternatives": [
+            "qwen/qwen-2.5-7b-instruct"
+        ]
+    },
+    
+    # ===============================
+    # 9️⃣ OCR Intelligence
+    # ===============================
+    "ocr_intelligence": {
+        "default": "meta-llama/llama-3.1-8b-instruct",
+        "alternatives": [
+            "qwen/qwen-2.5-7b-instruct"
+        ]
     }
 }
 
@@ -182,7 +255,7 @@ def get_model_for_feature(feature_name: str) -> str:
     Get the default model ID for a specific feature.
     
     Args:
-        feature_name: One of 'data_augmentor', 'code_review', 'delivery_intelligence', 'file_comparison'
+        feature_name: Feature name (e.g., 'data_augmentor', 'code_review', etc.)
         
     Returns:
         str: Model ID string (e.g. 'meta-llama/llama-3.1-8b-instruct')
@@ -193,6 +266,51 @@ def get_model_for_feature(feature_name: str) -> str:
         return "meta-llama/llama-3.1-8b-instruct"
     
     return feature_config["default"]
+
+
+def get_model_with_fallback(feature_name: str, attempt: int = 0) -> str:
+    """
+    Get model for feature with automatic fallback on rate limits.
+    
+    Args:
+        feature_name: Feature name
+        attempt: Current attempt number (0 = default, 1+ = alternatives)
+        
+    Returns:
+        str: Model ID to try
+    """
+    feature_config = FREE_MODELS_BY_USE_CASE.get(feature_name)
+    if not feature_config:
+        return "meta-llama/llama-3.1-8b-instruct"
+    
+    # First attempt: use default
+    if attempt == 0:
+        return feature_config["default"]
+    
+    # Subsequent attempts: use alternatives
+    alternatives = feature_config.get("alternatives", [])
+    if attempt - 1 < len(alternatives):
+        return alternatives[attempt - 1]
+    
+    # Exhausted all options, return last alternative
+    return alternatives[-1] if alternatives else feature_config["default"]
+
+
+def get_all_alternative_models(feature_name: str) -> list:
+    """
+    Get all alternative models for a feature (for retry logic).
+    
+    Returns:
+        list: [default, alt1, alt2, ...]
+    """
+    feature_config = FREE_MODELS_BY_USE_CASE.get(feature_name)
+    if not feature_config:
+        return ["meta-llama/llama-3.1-8b-instruct"]
+    
+    models = [feature_config["default"]]
+    models.extend(feature_config.get("alternatives", []))
+    return models
+
 
 DEFAULT_ROWS = 50
 MAX_ROWS = 1000

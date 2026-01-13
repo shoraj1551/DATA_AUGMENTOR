@@ -64,14 +64,25 @@ def parse_structured_data(text, requirements):
 def suggest_schema(text):
     """
     Introspect document and suggest available fields for extraction.
+    Returns tuple: (fields_list, error_message)
     """
     model = get_model_for_feature("document_parser")
     client = get_client()
     
-    system_prompt = """You are a Data Architect.
-    Analyze the document excerpt and suggest a list of available data fields that can be extracted.
-    Return a list of strings (field names).
-    Example: ["Invoice Number", "Date", "Total Amount", "Vendor Name"]
+    system_prompt = """You are an expert Data Architect and Document Analyst.
+    Analyze the document carefully and identify ALL extractable data fields.
+    
+    Look for:
+    - Structured data (tables, forms, invoices)
+    - Key-value pairs (labels and values)
+    - Dates, numbers, amounts
+    - Names, addresses, identifiers
+    - Any repeated patterns or data structures
+    
+    Return a comprehensive list of field names that can be extracted.
+    Be thorough - suggest 5-15 fields if possible.
+    
+    Return JSON format: {"fields": ["Field 1", "Field 2", ...]}
     """
     
     try:
@@ -79,15 +90,37 @@ def suggest_schema(text):
             model=model,
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Document Snippet:\n{text[:50000]}"}
+                {"role": "user", "content": f"Analyze this document and suggest ALL extractable fields:\n\n{text[:50000]}"}
             ],
-             response_format={"type": "json_object"}
+            response_format={"type": "json_object"},
+            temperature=0.3  # Lower temperature for more consistent results
         )
         data = json.loads(response.choices[0].message.content)
         
-        if isinstance(data, list): return data
-        if "fields" in data: return data["fields"]
-        return list(data.values())[0] if data else []
+        # Extract fields from various possible formats
+        fields = []
+        if isinstance(data, list):
+            fields = data
+        elif "fields" in data:
+            fields = data["fields"]
+        elif "suggested_fields" in data:
+            fields = data["suggested_fields"]
+        elif "extractable_fields" in data:
+            fields = data["extractable_fields"]
+        else:
+            # Try to get any list value
+            for value in data.values():
+                if isinstance(value, list):
+                    fields = value
+                    break
         
-    except Exception:
-        return []
+        # If we got fields, return them
+        if fields and len(fields) > 0:
+            return (fields, None)
+        else:
+            # No fields found - return helpful message
+            return ([], "No structured data fields detected in the document. The document may contain only unstructured text.")
+        
+    except Exception as e:
+        # Return error message
+        return ([], f"Analysis failed: {str(e)}. Please try again or check your API key.")

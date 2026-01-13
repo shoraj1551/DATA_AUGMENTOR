@@ -170,14 +170,20 @@ def render():
         
         with c_sug:
             if st.button("🔍 Analyze & Suggest Fields"):
-                with st.spinner("Analyzing schema..."):
+                with st.spinner("Analyzing document structure..."):
                     # Sample first 50k chars
                     sample_text = "".join(st.session_state.kb.documents)[:50000]
-                    fields = structure_engine.suggest_schema(sample_text)
+                    fields, error_msg = structure_engine.suggest_schema(sample_text)
                     st.session_state.suggested_fields = fields
+                    st.session_state.suggestion_error = error_msg
             
-            if st.session_state.suggested_fields:
-                st.caption("Found Fields:")
+            # Display results below the button
+            if 'suggestion_error' in st.session_state and st.session_state.suggestion_error:
+                # Show error or no-fields message in a box
+                st.warning(st.session_state.suggestion_error)
+            elif st.session_state.suggested_fields:
+                # Show found fields
+                st.success(f"✅ Found {len(st.session_state.suggested_fields)} extractable fields:")
                 for f in st.session_state.suggested_fields:
                     st.code(f, language="text")
         

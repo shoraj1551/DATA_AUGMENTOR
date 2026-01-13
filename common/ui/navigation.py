@@ -75,17 +75,27 @@ def initialize_session_state():
     # Initialize category collapse states - all expanded by default
     if "collapsed_categories" not in st.session_state:
         st.session_state.collapsed_categories = set()
-    # Initialize favorites
+    # Initialize favorites from persistent storage
     if "favorite_tools" not in st.session_state:
-        st.session_state.favorite_tools = set()
+        from common.utils.preferences import UserPreferences
+        prefs = UserPreferences()
+        st.session_state.favorite_tools = prefs.get_favorites()
+    # Store preferences instance
+    if "user_prefs" not in st.session_state:
+        from common.utils.preferences import UserPreferences
+        st.session_state.user_prefs = UserPreferences()
 
 
 def toggle_favorite(tool_id):
-    """Toggle a tool's favorite status"""
+    """Toggle a tool's favorite status with persistent storage"""
+    # Toggle in session state
     if tool_id in st.session_state.favorite_tools:
         st.session_state.favorite_tools.remove(tool_id)
     else:
         st.session_state.favorite_tools.add(tool_id)
+    
+    # Save to persistent storage
+    st.session_state.user_prefs.toggle_favorite(tool_id)
 
 
 def go_to_tool(tool_id):

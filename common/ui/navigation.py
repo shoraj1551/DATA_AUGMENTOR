@@ -74,6 +74,17 @@ def initialize_session_state():
     # Initialize category collapse states - all expanded by default
     if "collapsed_categories" not in st.session_state:
         st.session_state.collapsed_categories = set()
+    # Initialize favorites
+    if "favorite_tools" not in st.session_state:
+        st.session_state.favorite_tools = set()
+
+
+def toggle_favorite(tool_id):
+    """Toggle a tool's favorite status"""
+    if tool_id in st.session_state.favorite_tools:
+        st.session_state.favorite_tools.remove(tool_id)
+    else:
+        st.session_state.favorite_tools.add(tool_id)
 
 
 def go_to_tool(tool_id):
@@ -113,6 +124,48 @@ def render_navigation():
     
     st.sidebar.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
     
+    # Favorites Section (if any favorites exist)
+    if st.session_state.favorite_tools:
+        with st.sidebar.expander("⭐ **Favorites**", expanded=True):
+            for tool_id in st.session_state.favorite_tools:
+                if tool_id in TOOL_REGISTRY:
+                    tool_info = TOOL_REGISTRY[tool_id]
+                    name = tool_info["name"]
+                    status = tool_info.get("status", "")
+                    
+                    # Status indicator
+                    status_badge = ""
+                    if status == "beta":
+                        status_badge = " 🔶"
+                    elif status == "new":
+                        status_badge = " ✨"
+                    
+                    # Create columns for button and star
+                    col1, col2 = st.columns([0.85, 0.15])
+                    
+                    with col1:
+                        # Tool button
+                        is_active = st.session_state.tool == tool_id
+                        button_type = "primary" if is_active else "secondary"
+                        
+                        if st.button(
+                            f"{name}{status_badge}",
+                            key=f"fav_{tool_id}",
+                            type=button_type,
+                            use_container_width=True,
+                            help=tool_info.get("description", "")
+                        ):
+                            go_to_tool(tool_id)
+                            st.rerun()
+                    
+                    with col2:
+                        # Unstar button
+                        if st.button("⭐", key=f"unfav_{tool_id}", help="Remove from favorites"):
+                            toggle_favorite(tool_id)
+                            st.rerun()
+        
+        st.sidebar.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+    
     # Group tools by category
     tools_by_category = {}
     for tool_id, tool_info in TOOL_REGISTRY.items():
@@ -150,19 +203,33 @@ def render_navigation():
                 elif status == "new":
                     status_badge = " ✨"
                 
-                # Tool button
-                is_active = st.session_state.tool == tool_id
-                button_type = "primary" if is_active else "secondary"
+                # Create columns for button and star
+                col1, col2 = st.columns([0.85, 0.15])
                 
-                if st.button(
-                    f"{name}{status_badge}",
-                    key=f"nav_{tool_id}",
-                    type=button_type,
-                    use_container_width=True,
-                    help=tool_info.get("description", "")
-                ):
-                    go_to_tool(tool_id)
-                    st.rerun()
+                with col1:
+                    # Tool button
+                    is_active = st.session_state.tool == tool_id
+                    button_type = "primary" if is_active else "secondary"
+                    
+                    if st.button(
+                        f"{name}{status_badge}",
+                        key=f"nav_{tool_id}",
+                        type=button_type,
+                        use_container_width=True,
+                        help=tool_info.get("description", "")
+                    ):
+                        go_to_tool(tool_id)
+                        st.rerun()
+                
+                with col2:
+                    # Star/Unstar button
+                    is_favorited = tool_id in st.session_state.favorite_tools
+                    star_icon = "⭐" if is_favorited else "☆"
+                    star_help = "Remove from favorites" if is_favorited else "Add to favorites"
+                    
+                    if st.button(star_icon, key=f"star_{tool_id}", help=star_help):
+                        toggle_favorite(tool_id)
+                        st.rerun()
     
     # Divider
     st.sidebar.markdown("<div style='margin: 1.5rem 0; border-top: 1px solid #e2e8f0;'></div>", unsafe_allow_html=True)

@@ -3,7 +3,7 @@ DataAugmentor page - Generate, augment, and secure data
 """
 import streamlit as st
 import pandas as pd
-from common.ui.navigation import back_to_home
+from common.ui.navigation import render_page_header
 from llm.generate_synthetic_data import generate_synthetic_data
 from llm.augment_existing_data import augment_existing_data
 from tools.data_augmentor.pii_masking import mask_pii_data
@@ -12,9 +12,12 @@ from llm.generate_edge_case_data import generate_edge_case_data
 
 def render():
     """Render the DataAugmentor page"""
-    back_to_home("DataAugmentor")
-    st.markdown('<h2 class="main-header">DataAugmentor</h2>', unsafe_allow_html=True)
-    st.markdown('<p class="subtitle">Generate, augment, and secure your data</p>', unsafe_allow_html=True)
+    render_page_header(
+        title="Data Augmentor",
+        subtitle="Generate synthetic data, augment datasets, and mask PII",
+        icon="🔄",
+        status="stable"
+    )
     
     operation = st.selectbox(
         "Select Operation:",

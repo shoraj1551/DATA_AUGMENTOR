@@ -4,12 +4,16 @@ Document Parser & Intelligence UI Module (V2)
 import streamlit as st
 import pandas as pd
 import os
-from common.ui.navigation import back_to_home
+from common.ui.navigation import render_page_header
 from document_parser import extractor, qa_engine, structure_engine, rag_engine
 
 def render():
-    back_to_home("DocumentParser")
-    st.markdown('<h2 class="main-header">Document Intelligence <span style="background:#2563eb; color:white; font-size:0.4em; vertical-align:middle; padding:2px 8px; border-radius:10px;">V2</span></h2>', unsafe_allow_html=True)
+    render_page_header(
+        title="Document Parser",
+        subtitle="Extract text, chat with documents, and generate insights",
+        icon="📄",
+        status="beta"
+    )
     
     # --- Session State ---
     if "kb" not in st.session_state:

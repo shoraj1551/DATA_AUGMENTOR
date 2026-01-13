@@ -2,15 +2,17 @@
 File Comparison page - Compare datasets with precision
 """
 import streamlit as st
-from common.ui.navigation import back_to_home
+from common.ui.navigation import render_page_header
 from utils.file_comparator import compare_files
 
 
 def render():
     """Render the File Comparison page"""
-    back_to_home("FileComparison")
-    st.markdown('<h2 class="main-header">File Comparison</h2>', unsafe_allow_html=True)
-    st.markdown('<p class="subtitle">Compare datasets with precision</p>', unsafe_allow_html=True)
+    render_page_header(
+        title="File Comparison",
+        subtitle="Compare CSV, TXT, and JSON files with precision",
+        icon="📊"
+    )
     
     col1, col2 = st.columns(2)
     

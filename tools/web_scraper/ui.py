@@ -4,14 +4,17 @@ Web Data Scraper Page Module
 import streamlit as st
 import pandas as pd
 import json
-from common.ui.navigation import back_to_home
+from common.ui.navigation import render_page_header
 from web_scraper import validator, fetcher, parser
 
 def render():
     """Render the Web Data Scraper page"""
-    back_to_home("WebScraper")
-    st.markdown('<h2 class="main-header">Web Data Scraper <span style="background:#2563eb; color:white; font-size:0.4em; vertical-align:middle; padding:2px 8px; border-radius:10px;">BETA</span></h2>', unsafe_allow_html=True)
-    st.markdown('<p class="subtitle">Extract structured data from web pages compliant with robots.txt</p>', unsafe_allow_html=True)
+    render_page_header(
+        title="Web Data Scraper",
+        subtitle="Extract structured data from websites compliant with robots.txt",
+        icon="🌐",
+        status="beta"
+    )
     
     # Initialize session state for URL
     if "scraper_url" not in st.session_state:

@@ -5,7 +5,7 @@ import streamlit as st
 import pandas as pd
 import json
 import altair as alt
-from common.ui.navigation import back_to_home
+from common.ui.navigation import render_page_header
 from tools.delivery_intelligence.llm.plan_generator import generate_execution_plan
 from tools.delivery_intelligence.storage.plans_db import PlansDB
 from document_parser import extractor
@@ -29,9 +29,12 @@ def calculate_progress(plan):
 
 def render():
     """Render the Delivery Intelligence page"""
-    back_to_home("DeliveryIntelligence")
-    st.markdown('<h2 class="main-header">Delivery Intelligence <span style="background:#2563eb; color:white; font-size:0.4em; vertical-align:middle; padding:2px 8px; border-radius:10px;">BETA</span></h2>', unsafe_allow_html=True)
-    st.markdown('<p class="subtitle">AI-assisted execution planning for data & platform teams</p>', unsafe_allow_html=True)
+    render_page_header(
+        title="Delivery Intelligence",
+        subtitle="AI-assisted execution planning for data & platform teams",
+        icon="🎯",
+        status="beta"
+    )
     
     # Initialize database
     db = PlansDB()

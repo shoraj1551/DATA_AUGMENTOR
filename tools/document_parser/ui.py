@@ -38,10 +38,12 @@ def render():
         files_to_process = []
         
         if "Upload" in input_method:
+            st.info("📌 **Supported formats:** PDF, TXT, PPTX. For images, use the OCR tool (coming soon).")
             uploaded_files = st.file_uploader(
-                "Select files (PDF, Docx, Excel, PPT, Txt)", 
-                type=['pdf', 'docx', 'doc', 'pptx', 'xlsx', 'csv', 'txt', 'md', 'json', 'png', 'jpg'],
-                accept_multiple_files=True
+                "Select files (PDF, TXT, PowerPoint)", 
+                type=['pdf', 'txt', 'pptx'],
+                accept_multiple_files=True,
+                help="Upload PDF, text, or PowerPoint files only"
             )
             if uploaded_files:
                 if st.button("Process Files", type="primary"):

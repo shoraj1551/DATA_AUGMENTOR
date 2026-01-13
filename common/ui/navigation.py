@@ -42,6 +42,12 @@ TOOL_REGISTRY = {
         "category": "planning",
         "description": "AI execution planning",
         "status": "beta"
+    },
+    "ocr_intelligence": {
+        "name": "OCR Image Intelligence",
+        "category": "utilities",
+        "description": "Extract text from images and scanned documents",
+        "status": "new"
     }
 }
 

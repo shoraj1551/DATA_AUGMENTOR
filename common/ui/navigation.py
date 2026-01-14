@@ -131,9 +131,18 @@ CATEGORIES = {
 
 
 def initialize_session_state():
-    """Initialize session state variables"""
+    """Initialize session state variables with URL query parameter support"""
+    # Check URL query parameters first for persistence across refreshes
+    query_params = st.query_params
+    url_tool = query_params.get("tool", None)
+    
     if "tool" not in st.session_state:
-        st.session_state.tool = "home"
+        # Use URL parameter if available, otherwise default to home
+        st.session_state.tool = url_tool if url_tool else "home"
+    elif url_tool and url_tool != st.session_state.tool:
+        # URL changed (e.g., user clicked back button), update session state
+        st.session_state.tool = url_tool
+    
     # Initialize category collapse states - all expanded by default
     if "collapsed_categories" not in st.session_state:
         st.session_state.collapsed_categories = set()
@@ -161,8 +170,10 @@ def toggle_favorite(tool_id):
 
 
 def go_to_tool(tool_id):
-    """Navigate to a specific tool (callback)"""
+    """Navigate to a specific tool (callback) and update URL"""
     st.session_state.tool = tool_id
+    # Update URL query parameter for persistence across refreshes
+    st.query_params["tool"] = tool_id
 
 
 def back_to_home(tool_name):

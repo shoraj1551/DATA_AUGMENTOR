@@ -13,7 +13,7 @@ def render():
         title="Text Document Parser",
         subtitle="Extract text from PDF, TXT, and PowerPoint files (Use OCR Intelligence tool for image data)",
         icon="📄",
-        status="beta"
+        status="stable"
     )
     
     # --- Session State ---

@@ -247,6 +247,17 @@ FREE_MODELS_BY_USE_CASE = {
         "alternatives": [
             "qwen/qwen-2.5-7b-instruct"
         ]
+    },
+    
+    # ===============================
+    # 🔟 Company Intelligence
+    # ===============================
+    "company_intelligence": {
+        "default": "meta-llama/llama-3.1-8b-instruct",
+        "alternatives": [
+            "qwen/qwen-2.5-7b-instruct",
+            "mistralai/mistral-7b-instruct"
+        ]
     }
 }
 

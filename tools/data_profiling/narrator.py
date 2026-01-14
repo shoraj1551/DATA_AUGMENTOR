@@ -31,7 +31,7 @@ class InsightNarrator:
             from common.llm.client import call_with_fallback
             
             response = call_with_fallback(
-                use_case="data_profiling",
+                feature_name="data_profiling",
                 messages=[
                     {
                         "role": "system",

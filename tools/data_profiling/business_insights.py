@@ -332,3 +332,88 @@ def get_top_categorical_values(df, max_cols=3, max_values=5):
             ]
     
     return top_values
+
+
+def detect_outliers_by_column(df, max_cols=10):
+    """
+    Detect outliers in numeric columns using IQR method
+    
+    Args:
+        df: DataFrame
+        max_cols: Maximum number of columns to analyze
+        
+    Returns:
+        dict of column -> outlier info
+    """
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    
+    outlier_info = {}
+    
+    for col in numeric_cols[:max_cols]:
+        try:
+            Q1 = df[col].quantile(0.25)
+            Q3 = df[col].quantile(0.75)
+            IQR = Q3 - Q1
+            
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
+            
+            outliers = df[(df[col] < lower_bound) | (df[col] > upper_bound)]
+            outlier_count = len(outliers)
+            outlier_pct = (outlier_count / len(df) * 100) if len(df) > 0 else 0
+            
+            if outlier_count > 0:
+                outlier_info[col] = {
+                    'count': outlier_count,
+                    'percentage': round(outlier_pct, 1),
+                    'lower_bound': round(lower_bound, 2),
+                    'upper_bound': round(upper_bound, 2),
+                    'severity': '🔴 High' if outlier_pct > 10 else '🟡 Medium' if outlier_pct > 5 else '🟢 Low'
+                }
+        except Exception:
+            continue
+    
+    return outlier_info
+
+
+def get_column_quality_summary(profile, df):
+    """
+    Get quality summary for each column (null %, outliers)
+    
+    Args:
+        profile: Dataset profile dictionary
+        df: DataFrame
+        
+    Returns:
+        DataFrame with column quality metrics
+    """
+    outliers = detect_outliers_by_column(df)
+    
+    quality_data = []
+    
+    for col in profile['columns']:
+        col_name = col['name']
+        missing_pct = (col['missing'] / profile['overview']['rows'] * 100) if profile['overview']['rows'] > 0 else 0
+        
+        # Quality status
+        if missing_pct > 20:
+            quality_status = '🔴 Poor'
+        elif missing_pct > 10:
+            quality_status = '🟡 Fair'
+        else:
+            quality_status = '✅ Good'
+        
+        # Check for outliers
+        outlier_info = outliers.get(col_name, {})
+        outlier_status = outlier_info.get('severity', 'N/A') if outlier_info else 'N/A'
+        
+        quality_data.append({
+            'Column': col_name,
+            'Type': col.get('dtype', 'object'),
+            'Missing %': f"{missing_pct:.1f}%",
+            'Quality': quality_status,
+            'Outliers': f"{outlier_info.get('count', 0)} ({outlier_info.get('percentage', 0):.1f}%)" if outlier_info else 'None',
+            'Outlier Severity': outlier_status
+        })
+    
+    return pd.DataFrame(quality_data)

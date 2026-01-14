@@ -13,7 +13,7 @@ from tools.data_profiling.business_insights import (
     calculate_usability_score, find_critical_missing_fields,
     analyze_data_freshness, identify_key_columns,
     generate_prioritized_actions, calculate_cleanup_effort,
-    get_top_categorical_values
+    get_top_categorical_values, get_column_quality_summary
 )
 
 
@@ -317,6 +317,17 @@ def display_business_persona(profile, anomalies, insights, df, narrative):
         
         if key_cols_data:
             st.dataframe(pd.DataFrame(key_cols_data), use_container_width=True, hide_index=True)
+        
+        # Column Quality Summary (Null % + Outliers)
+        st.markdown("---")
+        st.markdown("### 📋 Column Quality Summary")
+        st.caption("Null percentage and outlier detection for all columns")
+        
+        try:
+            quality_summary = get_column_quality_summary(profile, df)
+            st.dataframe(quality_summary, use_container_width=True, hide_index=True)
+        except Exception as e:
+            st.warning(f"Could not generate column quality summary: {str(e)}")
         
         # Critical Issues
         if critical_fields:

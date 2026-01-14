@@ -50,22 +50,32 @@ def render():
         st.info("💡 **Supported Formats:**\n- CSV (.csv)\n- Excel (.xlsx, .xls)\n- Parquet (.parquet)\n- JSON (.json)")
     
     if uploaded_file:
+        # Clear previous session state when new file is uploaded
+        current_file_name = uploaded_file.name
+        if 'last_uploaded_file' not in st.session_state or st.session_state.last_uploaded_file != current_file_name:
+            # New file uploaded - clear all previous results
+            for key in ['profile', 'anomalies', 'insights', 'narrative', 'df', 'audience']:
+                if key in st.session_state:
+                    del st.session_state[key]
+            st.session_state.last_uploaded_file = current_file_name
+        
         # Load dataset based on file extension
         try:
             file_ext = uploaded_file.name.split('.')[-1].lower()
             
             if file_ext == 'csv':
                 # Try to detect delimiter and encoding
+                # IMPORTANT: Set index_col=None to prevent treating first column as index
                 try:
                     # First, try with default settings
-                    df = pd.read_csv(uploaded_file)
+                    df = pd.read_csv(uploaded_file, index_col=None)
                 except Exception:
                     # If that fails, try common delimiters
                     uploaded_file.seek(0)  # Reset file pointer
                     for delimiter in [',', ';', '\t', '|']:
                         try:
                             uploaded_file.seek(0)
-                            df = pd.read_csv(uploaded_file, delimiter=delimiter)
+                            df = pd.read_csv(uploaded_file, delimiter=delimiter, index_col=None)
                             # Check if we got more than 1 column
                             if len(df.columns) > 1:
                                 break
@@ -74,18 +84,31 @@ def render():
                     else:
                         # If all delimiters fail, try with python engine
                         uploaded_file.seek(0)
-                        df = pd.read_csv(uploaded_file, engine='python', sep=None)
+                        df = pd.read_csv(uploaded_file, engine='python', sep=None, index_col=None)
             elif file_ext in ['xlsx', 'xls']:
-                df = pd.read_excel(uploaded_file)
+                # Excel: Don't treat first column as index
+                df = pd.read_excel(uploaded_file, index_col=None)
             elif file_ext == 'parquet':
+                # Parquet: Reset index to avoid index column issues
                 df = pd.read_parquet(uploaded_file)
+                df = df.reset_index(drop=False)  # Keep index as column if it has data
             elif file_ext == 'json':
+                # JSON: Don't treat first column as index
                 df = pd.read_json(uploaded_file)
+                if df.index.name:  # If index has a name, it might be data
+                    df = df.reset_index(drop=False)
             else:
                 st.error(f"❌ Unsupported file format: {file_ext}")
                 return
 
+            # Clean up: Remove unnamed index columns that pandas might have added
+            df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+            
+            # Remove duplicate columns if any
+            df = df.loc[:, ~df.columns.duplicated()]
+            
             st.success(f"✅ Loaded dataset: {len(df)} rows × {len(df.columns)} columns")
+            st.caption(f"📁 File: {uploaded_file.name} | Format: {file_ext.upper()}")
             
             # Sampling options
             with st.expander("⚙️ Profiling Settings"):

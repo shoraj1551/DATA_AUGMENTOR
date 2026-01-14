@@ -139,6 +139,17 @@ def render():
              st.session_state.doc_loaded = False
              st.session_state.chat_history = []
              st.session_state.parser_mode = None
+             
+             # Clear extraction-related state to prevent old data from showing
+             if 'suggested_fields' in st.session_state:
+                 del st.session_state.suggested_fields
+             if 'suggestion_error' in st.session_state:
+                 del st.session_state.suggestion_error
+             if 'auto_requirements' in st.session_state:
+                 del st.session_state.auto_requirements
+             if 'story_highlights' in st.session_state:
+                 del st.session_state.story_highlights
+             
              st.rerun()
 
     # Wizard Mode Selection

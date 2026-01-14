@@ -10,6 +10,16 @@ from common.ui.navigation import render_page_header
 from tools.data_profiling.profiler import DataProfiler
 from tools.data_profiling.insights import InsightGenerator
 from tools.data_profiling.narrator import InsightNarrator
+from tools.data_profiling.visualizations import (
+    create_distribution_plots, create_box_plots, 
+    create_correlation_heatmap, create_quality_gauge
+)
+from tools.data_profiling.ml_models import BasicMLTrainer
+from tools.data_profiling.persona_layouts import (
+    display_technical_persona,
+    display_executive_persona,
+    display_business_persona
+)
 
 
 def render():
@@ -185,8 +195,23 @@ def render():
 
 
 def display_profile_results(profile, anomalies, insights, df, narrative=None, audience='technical'):
-    """Display profiling results"""
+    """Display profiling results with persona-specific UX"""
     
+    # Get current audience from session state
+    current_audience = st.session_state.get('audience', 'technical')
+    
+    # Route to persona-specific display
+    if current_audience == 'technical':
+        display_technical_persona(profile, anomalies, insights, df, narrative)
+        return
+    elif current_audience == 'executive':
+        display_executive_persona(profile, anomalies, insights, df, narrative)
+        return
+    else:  # business
+        display_business_persona(profile, anomalies, insights, df, narrative)
+        return
+    
+    # LEGACY CODE BELOW (will be removed after testing)
     # Narrative (if available) - Show first for executive summary
     if narrative:
         st.markdown("## 📖 Data Story")

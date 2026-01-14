@@ -267,10 +267,10 @@ def display_business_persona(profile, anomalies, insights, df, narrative):
         
         with col_assess1:
             st.metric("Usability Score", f"{usability['score']}/100",
-                     help="Overall data usability based on completeness, duplicates, and diversity")
+                     help="**Formula:** (Completeness × 0.6) - (Duplicate Rate × 2) + (Type Diversity × 0.2)\n\nBased on completeness, duplicates, and data type diversity")
         with col_assess2:
             st.metric("Quality Grade", usability['grade'],
-                     help="A=Excellent, B=Good, C=Fair, D=Poor, F=Critical")
+                     help="**Grading Scale:**\n- A: 90-100\n- B: 80-89\n- C: 70-79\n- D: 60-69\n- F: <60")
         with col_assess3:
             st.metric("Cleanup Effort", cleanup_effort,
                      help="Estimated time to address data quality issues")
@@ -291,7 +291,8 @@ def display_business_persona(profile, anomalies, insights, df, narrative):
         with col3:
             st.metric("Completeness", f"{usability['completeness_pct']:.1f}%",
                      delta="Good" if usability['completeness_pct'] >= 95 else "Needs Work",
-                     delta_color="normal" if usability['completeness_pct'] >= 95 else "inverse")
+                     delta_color="normal" if usability['completeness_pct'] >= 95 else "inverse",
+                     help="**Formula:** ((Total Cells - Missing Cells) / Total Cells) × 100\n\nPercentage of non-missing values")
         with col4:
             if freshness['has_dates']:
                 freshness_label = freshness.get('freshness', 'Unknown')
@@ -379,10 +380,10 @@ def display_business_persona(profile, anomalies, insights, df, narrative):
                         st.caption(f"• {val['value']}: {val['count']:,} ({val['pct']}%)")
         
         # AI-Generated Insights (if available)
-        if narrative:
-            st.markdown("---")
-            st.markdown("### 💡 AI-Generated Insights")
-            
+        st.markdown("---")
+        st.markdown("### 💡 AI-Generated Insights")
+        
+        if narrative and (narrative.get('insights') or narrative.get('actions')):
             if narrative.get('insights'):
                 for insight in narrative['insights']:
                     st.info(f"💡 {insight}")
@@ -391,6 +392,9 @@ def display_business_persona(profile, anomalies, insights, df, narrative):
                 st.markdown("**Additional Recommendations:**")
                 for i, action in enumerate(narrative['actions'], 1):
                     st.markdown(f"{i}. {action}")
+        else:
+            st.info("ℹ️ AI insights not generated. Make sure 'Generate AI Insights' is checked when profiling.")
+            st.caption("Tip: The insights above are rule-based and always available. AI insights provide additional LLM-powered analysis.")
         
     except Exception as e:
         st.error(f"Error displaying business dashboard: {str(e)}")

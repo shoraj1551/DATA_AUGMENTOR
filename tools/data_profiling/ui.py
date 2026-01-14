@@ -24,17 +24,38 @@ def render():
     st.info("🧪 **Gamma Version** - Experimental feature. Feedback welcome!")
     
     # File Upload
+    # File Upload
     st.markdown("### 📤 Upload Dataset")
-    uploaded_file = st.file_uploader(
-        "Choose a CSV file",
-        type=['csv'],
-        help="Upload a CSV file to automatically profile"
-    )
+    
+    col_up1, col_up2 = st.columns([2, 1])
+    with col_up1:
+        uploaded_file = st.file_uploader(
+            "Choose a file (CSV, Excel, Parquet, JSON)",
+            type=['csv', 'xlsx', 'xls', 'parquet', 'json'],
+            help="Upload a dataset to automatically profile. Supports CSV, Excel, Parquet, and JSON."
+        )
+    
+    with col_up2:
+        # Template download (optional, maybe later)
+        st.info("💡 **Supported Formats:**\n- CSV (.csv)\n- Excel (.xlsx, .xls)\n- Parquet (.parquet)\n- JSON (.json)")
     
     if uploaded_file:
-        # Load dataset
+        # Load dataset based on file extension
         try:
-            df = pd.read_csv(uploaded_file)
+            file_ext = uploaded_file.name.split('.')[-1].lower()
+            
+            if file_ext == 'csv':
+                df = pd.read_csv(uploaded_file)
+            elif file_ext in ['xlsx', 'xls']:
+                df = pd.read_excel(uploaded_file)
+            elif file_ext == 'parquet':
+                df = pd.read_parquet(uploaded_file)
+            elif file_ext == 'json':
+                df = pd.read_json(uploaded_file)
+            else:
+                st.error(f"❌ Unsupported file format: {file_ext}")
+                return
+
             st.success(f"✅ Loaded dataset: {len(df)} rows × {len(df.columns)} columns")
             
             # Sampling options
@@ -113,7 +134,7 @@ def render():
     else:
         # Empty state
         st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
-        st.info("👆 Upload a CSV file to get started with automated profiling!")
+        st.info("👆 Upload a dataset (CSV, Excel, Parquet, JSON) to get started with automated profiling!")
         
         # Example features
         st.markdown("### 💡 What You'll Get")

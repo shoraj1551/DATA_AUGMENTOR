@@ -4,6 +4,7 @@ Document Parser & Intelligence UI Module (V2)
 import streamlit as st
 import pandas as pd
 import os
+import hashlib
 from common.ui.navigation import render_page_header
 from document_parser import extractor, qa_engine, structure_engine, rag_engine
 
@@ -28,6 +29,8 @@ def render():
         st.session_state.parser_mode = None 
     if "suggested_fields" not in st.session_state:
         st.session_state.suggested_fields = []
+    if "analysis_cache" not in st.session_state:
+        st.session_state.analysis_cache = {}
 
     # --- LANDING SCREEN (Choice First) ---
     if not st.session_state.doc_loaded:
@@ -39,26 +42,34 @@ def render():
         
         if "Upload" in input_method:
             st.info("📌 **Supported formats:** PDF, TXT, PPTX. For images, use the OCR tool (coming soon).")
+            
             uploaded_files = st.file_uploader(
                 "Select files (PDF, TXT, PowerPoint)", 
                 type=['pdf', 'txt', 'pptx'],
                 accept_multiple_files=True,
                 help="Upload PDF, text, or PowerPoint files only"
             )
+            
+            generate_insights = st.checkbox("Generate AI Insights (Summary & Highlights)", value=False, help="Uncheck for faster processing")
+            
             if uploaded_files:
                 if st.button("Process Files", type="primary"):
+                    st.session_state.generate_insights = generate_insights
                     files_to_process = [(f, f.name) for f in uploaded_files]
 
         else: # Local Folder
             folder_path = st.text_input("Enter Folder Path:", placeholder=r"C:\Users\Name\Documents\Reports")
             
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
                 max_files = st.number_input("Max Files to Load", min_value=1, max_value=100, value=20, help="Limit number of files to prevent long loading times")
             with col2:
                 include_subfolders = st.checkbox("Include Subfolders", value=False, help="Search in subdirectories (may be slower)")
+            with col3:
+                generate_insights = st.checkbox("Generate AI Insights", value=False, help="Uncheck for faster processing")
             
             if st.button("Load Folder", type="primary"):
+                st.session_state.generate_insights = generate_insights
                 if os.path.isdir(folder_path):
                     valid_exts = ['.pdf', '.docx', '.doc', '.pptx', '.xlsx', '.csv', '.txt', '.md', '.json']
                     file_count = 0
@@ -119,9 +130,14 @@ def render():
                 st.session_state.kb.add_documents(texts, names)
                 st.session_state.doc_loaded = True
                 
-                st.write("✨ Generating Insights...")
-                if len(full_text_concat) > 0:
-                     st.session_state.story_highlights = qa_engine.generate_story_highlights(full_text_concat)
+                # Check if insights should be generated
+                if st.session_state.get('generate_insights', False):
+                    st.write("✨ Generating Insights...")
+                    if len(full_text_concat) > 0:
+                         st.session_state.story_highlights = qa_engine.generate_story_highlights(full_text_concat)
+                else:
+                    st.write("⏩ Skipping Insights (Optimized Mode)")
+                    st.session_state.story_highlights = []
                 
                 st.success(f"✅ Successfully loaded {len(texts)} document(s)!")
                 st.rerun()
@@ -214,9 +230,39 @@ def render():
         with c_sug:
             if st.button("🔍 Analyze & Suggest Fields"):
                 with st.spinner("Analyzing document structure..."):
-                    # Sample first 50k chars
-                    sample_text = "".join(st.session_state.kb.documents)[:50000]
-                    fields, error_msg = structure_engine.suggest_schema(sample_text)
+                    # Get full text for caching key
+                    full_text = "".join(st.session_state.kb.documents)
+                    doc_hash = hashlib.md5(full_text.encode()).hexdigest()
+                    
+                    # Check cache first
+                    if doc_hash in st.session_state.analysis_cache:
+                        cache_data = st.session_state.analysis_cache[doc_hash]
+                        fields = cache_data['fields']
+                        error_msg = cache_data['error']
+                        st.toast("⚡ Loaded analysis from cache!", icon="⚡")
+                    else:
+                        # Smart sampling: First 10k + Middle 5k + Last 5k
+                        text_len = len(full_text)
+                        if text_len > 25000:
+                            sample_text = (
+                                full_text[:10000] + 
+                                "\n...[middle]...\n" + 
+                                full_text[text_len//2 : text_len//2 + 5000] + 
+                                "\n...[end]...\n" + 
+                                full_text[-5000:]
+                            )
+                        else:
+                            sample_text = full_text
+                            
+                        # Perform analysis
+                        fields, error_msg = structure_engine.suggest_schema(sample_text)
+                        
+                        # Cache result if successful or specific error
+                        st.session_state.analysis_cache[doc_hash] = {
+                            'fields': fields,
+                            'error': error_msg
+                        }
+                    
                     st.session_state.suggested_fields = fields
                     st.session_state.suggestion_error = error_msg
                     

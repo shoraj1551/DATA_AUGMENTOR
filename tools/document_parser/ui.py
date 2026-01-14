@@ -176,6 +176,10 @@ def render():
                     fields, error_msg = structure_engine.suggest_schema(sample_text)
                     st.session_state.suggested_fields = fields
                     st.session_state.suggestion_error = error_msg
+                    
+                    # Auto-populate extraction requirements if fields found
+                    if fields and len(fields) > 0:
+                        st.session_state.auto_requirements = f"Extract: {', '.join(fields)}"
             
             # Display results below the button
             if 'suggestion_error' in st.session_state and st.session_state.suggestion_error:
@@ -188,19 +192,67 @@ def render():
                     st.code(f, language="text")
         
         with c_req:
-            reqs = st.text_area("Extraction Requirements:", placeholder="e.g. Extract Invoice Date, Amount, and Vendor.")
+            # Pre-fill with suggested fields if available
+            default_reqs = st.session_state.get('auto_requirements', '')
+            reqs = st.text_area(
+                "Extraction Requirements:", 
+                value=default_reqs,
+                placeholder="e.g. Extract Invoice Date, Amount, and Vendor. (Leave empty to auto-extract all structured data)",
+                help="Specify what to extract, or leave empty to automatically extract all structured data found"
+            )
+            
+            # Export format selection
+            export_format = st.radio(
+                "Export Format:",
+                options=["Table (CSV)", "JSON"],
+                horizontal=True,
+                help="Choose how to export extracted data"
+            )
             
             if st.button("Run Extraction 🚀", type="primary"):
-                if reqs:
-                    with st.spinner("Extracting..."):
-                        # Use all context for extraction (Gemini 1M handles it)
-                        full_context = "\n".join(st.session_state.kb.documents)
-                        try:
-                            dfs = structure_engine.parse_structured_data(full_context, reqs)
-                            st.success(f"✅ Extracted {len(dfs)} tables.")
+                # Allow extraction even without requirements
+                with st.spinner("Extracting data..."):
+                    # Use all context for extraction (Gemini 1M handles it)
+                    full_context = "\n".join(st.session_state.kb.documents)
+                    
+                    # If no requirements, use auto-extract mode
+                    if not reqs or reqs.strip() == "":
+                        if st.session_state.suggested_fields:
+                            # Use suggested fields
+                            reqs = f"Extract all available data for these fields: {', '.join(st.session_state.suggested_fields)}"
+                        else:
+                            # Generic extraction
+                            reqs = "Extract all structured data, tables, and key-value pairs from this document"
+                    
+                    try:
+                        dfs = structure_engine.parse_structured_data(full_context, reqs)
+                        
+                        if dfs and len(dfs) > 0:
+                            st.success(f"✅ Extracted {len(dfs)} dataset(s).")
                             for name, df in dfs:
                                 with st.expander(f"Dataset: {name}", expanded=True):
                                     st.dataframe(df)
-                                    st.download_button(f"Download {name}.csv", df.to_csv(index=False).encode('utf-8'), f"{name}.csv")
-                        except Exception as e:
-                            st.error(f"Failed: {e}")
+                                    
+                                    # Export options based on selected format
+                                    col1, col2 = st.columns(2)
+                                    with col1:
+                                        st.download_button(
+                                            f"📥 Download {name}.csv", 
+                                            df.to_csv(index=False).encode('utf-8'), 
+                                            f"{name}.csv",
+                                            use_container_width=True
+                                        )
+                                    with col2:
+                                        # JSON export
+                                        json_data = df.to_json(orient='records', indent=2)
+                                        st.download_button(
+                                            f"📥 Download {name}.json", 
+                                            json_data.encode('utf-8'), 
+                                            f"{name}.json",
+                                            mime="application/json",
+                                            use_container_width=True
+                                        )
+                        else:
+                            st.warning("⚠️ No structured data found in the document. The document may contain only unstructured text.")
+                    except Exception as e:
+                        st.error(f"Extraction failed: {e}")

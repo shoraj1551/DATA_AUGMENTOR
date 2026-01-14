@@ -29,7 +29,7 @@ TOOL_REGISTRY = {
         "name": "Text Document Parser",
         "category": "utilities",
         "description": "Extract text from PDF, TXT, and PPT files",
-        "status": "beta"
+        "status": "stable"
     },
     "web_scraper": {
         "name": "Web Scraper",

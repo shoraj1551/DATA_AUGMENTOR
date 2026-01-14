@@ -368,6 +368,16 @@ def display_executive_persona(profile, anomalies, insights, df, narrative):
                     with st.expander(f"Q: {qa['question']}", expanded=(idx == 0)):
                         result = qa['result']
                         
+                        # Display confidence if available
+                        if 'confidence' in result:
+                            confidence = result['confidence']
+                            if confidence == 'high':
+                                st.success(f"✅ Confidence: High")
+                            elif confidence == 'medium':
+                                st.info(f"ℹ️ Confidence: Medium")
+                            else:
+                                st.warning(f"⚠️ Confidence: Low - Answer may be uncertain")
+                        
                         # Display answer
                         st.markdown(f"**Answer:**")
                         st.info(result.get('answer', 'No answer available'))
@@ -377,8 +387,25 @@ def display_executive_persona(profile, anomalies, insights, df, narrative):
                             st.markdown("**Data:**")
                             if isinstance(result['data'], pd.DataFrame):
                                 st.dataframe(result['data'], use_container_width=True)
+                                
+                                # Add download button for data
+                                if result.get('downloadable', False):
+                                    csv = result['data'].to_csv(index=False)
+                                    st.download_button(
+                                        label="📥 Download Results as CSV",
+                                        data=csv,
+                                        file_name=f"query_result_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                                        mime="text/csv",
+                                        key=f"download_qa_{idx}"
+                                    )
                             else:
                                 st.write(result['data'])
+                        
+                        # Show context used (for transparency)
+                        if 'context_used' in result:
+                            with st.expander("🔍 View Retrieved Context (RAG)"):
+                                st.caption("This is the context retrieved from the knowledge base that was used to answer your question:")
+                                st.code(result['context_used'], language="text")
         
         with tab3:
             # AI-Generated Insights

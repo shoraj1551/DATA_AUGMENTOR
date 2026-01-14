@@ -28,7 +28,7 @@ def calculate_usability_score(profile):
     duplicate_penalty = min(duplicate_rate * 2, 20)
     
     # Data type diversity bonus (0-20 points)
-    type_diversity = len(set([col['type'] for col in profile['columns']])) / 4  # Assume max 4 types
+    type_diversity = len(set([col.get('dtype', 'object') for col in profile['columns']])) / 4  # Assume max 4 types
     diversity_score = min(type_diversity, 1) * 20
     
     # Calculate final score
@@ -182,13 +182,14 @@ def identify_key_columns(profile, df):
             reasons.append('Unique')
         
         # Data type importance (0-20 points)
-        if col['type'] in ['int64', 'float64']:
+        col_type = col.get('dtype', 'object')
+        if col_type in ['int64', 'float64']:
             score += 15
             reasons.append('Numeric')
-        elif col['type'] in ['datetime64[ns]', 'datetime']:
+        elif col_type in ['datetime64[ns]', 'datetime']:
             score += 20
             reasons.append('Date')
-        elif col['type'] == 'object' and col['unique'] < 20:
+        elif col_type == 'object' and col['unique'] < 20:
             score += 10
             reasons.append('Categorical')
         
@@ -201,7 +202,7 @@ def identify_key_columns(profile, df):
         scored_cols.append({
             'name': col['name'],
             'score': round(score, 1),
-            'type': col['type'],
+            'type': col.get('dtype', 'object'),
             'reasons': ', '.join(reasons) if reasons else 'Standard'
         })
     

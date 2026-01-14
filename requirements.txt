@@ -25,3 +25,7 @@ rank_bm25==0.2.2
 # Web Scraper
 beautifulsoup4==4.12.3
 duckduckgo-search==4.1.1
+
+# Data Profiling & ML
+scikit-learn==1.8.0
+plotly==5.18.0

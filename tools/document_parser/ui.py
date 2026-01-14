@@ -51,47 +51,79 @@ def render():
 
         else: # Local Folder
             folder_path = st.text_input("Enter Folder Path:", placeholder=r"C:\Users\Name\Documents\Reports")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                max_files = st.number_input("Max Files to Load", min_value=1, max_value=100, value=20, help="Limit number of files to prevent long loading times")
+            with col2:
+                include_subfolders = st.checkbox("Include Subfolders", value=False, help="Search in subdirectories (may be slower)")
+            
             if st.button("Load Folder", type="primary"):
                 if os.path.isdir(folder_path):
-                     valid_exts = ['.pdf', '.docx', '.doc', '.pptx', '.xlsx', '.csv', '.txt', '.md', '.json']
-                     for root, dirs, files in os.walk(folder_path):
-                        for file in files:
+                    valid_exts = ['.pdf', '.docx', '.doc', '.pptx', '.xlsx', '.csv', '.txt', '.md', '.json']
+                    file_count = 0
+                    
+                    if include_subfolders:
+                        # Walk through subdirectories
+                        for root, dirs, files in os.walk(folder_path):
+                            for file in files:
+                                if file_count >= max_files:
+                                    break
+                                if any(file.lower().endswith(ext) for ext in valid_exts):
+                                    full_path = os.path.join(root, file)
+                                    files_to_process.append((full_path, file))
+                                    file_count += 1
+                            if file_count >= max_files:
+                                break
+                    else:
+                        # Only current folder (faster)
+                        for file in os.listdir(folder_path):
+                            if file_count >= max_files:
+                                break
                             if any(file.lower().endswith(ext) for ext in valid_exts):
-                                full_path = os.path.join(root, file)
-                                files_to_process.append((full_path, file))
-                     
-                     if not files_to_process:
-                         st.error("No supported files found in this folder.")
+                                full_path = os.path.join(folder_path, file)
+                                if os.path.isfile(full_path):
+                                    files_to_process.append((full_path, file))
+                                    file_count += 1
+                    
+                    if not files_to_process:
+                        st.error("No supported files found in this folder.")
+                    elif file_count >= max_files:
+                        st.warning(f"⚠️ Reached maximum file limit ({max_files}). Only first {max_files} files will be loaded.")
                 else:
                     st.error("Invalid Folder Path")
         
         # --- PROCESSING LOGIC ---
         if files_to_process:
-            with st.status("Processing Documents..."):
-                st.write("Extracting text...")
+            with st.status("Processing Documents...", expanded=True):
+                st.write(f"📁 Found {len(files_to_process)} file(s) to process")
                 texts = []
                 names = []
                 full_text_concat = ""
                 
                 progress_bar = st.progress(0)
+                status_text = st.empty()
+                
                 for i, (f_obj, fname) in enumerate(files_to_process):
                     try:
+                        status_text.text(f"Processing {i+1}/{len(files_to_process)}: {fname}")
                         txt = extractor.extract_text_from_file(f_obj)
                         texts.append(txt)
                         names.append(fname)
                         full_text_concat += f"\n--- File: {fname} ---\n{txt}"
                     except Exception as e:
-                        st.warning(f"Failed to load {fname}: {e}")
+                        st.warning(f"⚠️ Failed to load {fname}: {e}")
                     progress_bar.progress((i + 1) / len(files_to_process))
                 
-                st.write("Building Knowledge Base (RAG Index)...")
+                st.write("🔍 Building Knowledge Base (RAG Index)...")
                 st.session_state.kb.add_documents(texts, names)
                 st.session_state.doc_loaded = True
                 
-                st.write("Generating Insights...")
+                st.write("✨ Generating Insights...")
                 if len(full_text_concat) > 0:
                      st.session_state.story_highlights = qa_engine.generate_story_highlights(full_text_concat)
                 
+                st.success(f"✅ Successfully loaded {len(texts)} document(s)!")
                 st.rerun()
         return
 

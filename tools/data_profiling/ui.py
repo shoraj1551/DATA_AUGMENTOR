@@ -76,11 +76,13 @@ def render():
                         help="Use LLM to generate insights (requires API key)"
                     )
                 with col3:
-                    audience = st.selectbox(
+                    audience_sel = st.selectbox(
                         "Narrative Audience",
-                        options=['technical', 'executive', 'business'],
+                        options=['Technical', 'Executive', 'Business'],
+                        index=0,
                         help="Target audience for narrative generation"
                     )
+                    audience = audience_sel.lower()
             
             # Profile button
             if st.button("🔍 Profile Dataset", type="primary", use_container_width=True):

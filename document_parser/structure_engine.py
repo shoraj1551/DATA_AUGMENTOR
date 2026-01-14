@@ -92,7 +92,8 @@ def suggest_schema(text):
                 {"role": "user", "content": f"Analyze this document and suggest ALL extractable fields:\n\n{text[:50000]}"}
             ],
             response_format={"type": "json_object"},
-            temperature=0.3
+            temperature=0.3,
+            timeout=30  # 30 second timeout to prevent hanging
         )
         data = json.loads(response.choices[0].message.content)
         

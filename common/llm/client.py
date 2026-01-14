@@ -28,13 +28,14 @@ def get_client():
     return _client
 
 
-def call_with_fallback(feature_name: str, messages: list, **kwargs):
+def call_with_fallback(feature_name: str, messages: list, timeout: int = 60, **kwargs):
     """
     Call LLM with automatic fallback to alternative models on rate limits.
     
     Args:
         feature_name: Feature name to get models from config
         messages: Chat messages
+        timeout: Timeout in seconds (default 60)
         **kwargs: Additional arguments for chat.completions.create
         
     Returns:
@@ -56,6 +57,7 @@ def call_with_fallback(feature_name: str, messages: list, **kwargs):
             response = client.chat.completions.create(
                 model=model,
                 messages=messages,
+                timeout=timeout,  # Add timeout to prevent hanging
                 **kwargs
             )
             return response

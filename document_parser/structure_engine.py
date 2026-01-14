@@ -9,8 +9,7 @@ def parse_structured_data(text, requirements):
     Extract structured data (tables) from document text based on user requirements.
     Retuns a list of pandas DataFrames.
     """
-    model = get_model_for_feature("document_parser")
-    client = get_client()
+    from common.llm.client import call_with_fallback
     
     system_prompt = """You are a Data Extraction Specialist.
     Extract the requested data from the document text into a structured JSON format (list of dicts).
@@ -28,8 +27,8 @@ def parse_structured_data(text, requirements):
     """
     
     try:
-        response = client.chat.completions.create(
-            model=model,
+        response = call_with_fallback(
+            feature_name="document_parser",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -66,8 +65,7 @@ def suggest_schema(text):
     Introspect document and suggest available fields for extraction.
     Returns tuple: (fields_list, error_message)
     """
-    model = get_model_for_feature("document_parser")
-    client = get_client()
+    from common.llm.client import call_with_fallback
     
     system_prompt = """You are an expert Data Architect and Document Analyst.
     Analyze the document carefully and identify ALL extractable data fields.
@@ -86,14 +84,14 @@ def suggest_schema(text):
     """
     
     try:
-        response = client.chat.completions.create(
-            model=model,
+        response = call_with_fallback(
+            feature_name="document_parser",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"Analyze this document and suggest ALL extractable fields:\n\n{text[:50000]}"}
             ],
             response_format={"type": "json_object"},
-            temperature=0.3  # Lower temperature for more consistent results
+            temperature=0.3
         )
         data = json.loads(response.choices[0].message.content)
         

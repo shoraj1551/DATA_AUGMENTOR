@@ -9,6 +9,12 @@ from tools.data_profiling.visualizations import (
     create_correlation_heatmap, create_quality_gauge
 )
 from tools.data_profiling.ml_models import BasicMLTrainer
+from tools.data_profiling.business_insights import (
+    calculate_usability_score, find_critical_missing_fields,
+    analyze_data_freshness, identify_key_columns,
+    generate_prioritized_actions, calculate_cleanup_effort,
+    get_top_categorical_values
+)
 
 
 def display_technical_persona(profile, anomalies, insights, df, narrative):
@@ -234,78 +240,148 @@ def display_executive_persona(profile, anomalies, insights, df, narrative):
 
 
 def display_business_persona(profile, anomalies, insights, df, narrative):
-    """Business persona: Action-oriented operational view"""
+    """Business persona: Action-oriented operational view with always-available insights"""
     
     st.markdown("## 💼 Operational Dashboard")
     
     try:
-        # Calculate operational metrics
-        total_cells = profile['overview']['rows'] * profile['overview']['columns']
-        completeness = ((total_cells - profile['overview']['total_missing']) / total_cells * 100) if total_cells > 0 else 0
-        usable_records = profile['overview']['rows'] - profile['overview']['duplicate_rows']
-        duplicate_rate = (profile['overview']['duplicate_rows'] / profile['overview']['rows'] * 100) if profile['overview']['rows'] > 0 else 0
+        # Calculate business insights (ALWAYS AVAILABLE - no LLM required)
+        usability = calculate_usability_score(profile)
+        critical_fields = find_critical_missing_fields(profile)
+        freshness = analyze_data_freshness(df)
+        key_columns = identify_key_columns(profile, df)
+        cleanup_effort = calculate_cleanup_effort(profile, critical_fields)
+        actions = generate_prioritized_actions(profile, critical_fields, usability)
         
-        # Operational readiness
-        readiness = "Ready" if completeness > 95 and duplicate_rate < 1 else \
-                   "Needs Cleanup" if completeness > 85 else "Critical Issues"
-        
-        # Status banner
-        if readiness == "Ready":
-            st.success(f"✅ **Status: {readiness}** - Dataset is ready for operational use")
-        elif readiness == "Needs Cleanup":
-            st.warning(f"⚠️ **Status: {readiness}** - Minor data quality issues detected")
+        # Status banner with usability score
+        if usability['grade'] in ['A', 'B']:
+            st.success(f"✅ **Usability Score: {usability['score']}/100 (Grade {usability['grade']})** - Dataset is ready for use")
+        elif usability['grade'] == 'C':
+            st.warning(f"⚠️ **Usability Score: {usability['score']}/100 (Grade {usability['grade']})** - Minor cleanup recommended")
         else:
-            st.error(f"🔴 **Status: {readiness}** - Significant data quality problems")
+            st.error(f"🔴 **Usability Score: {usability['score']}/100 (Grade {usability['grade']})** - Significant cleanup required")
         
-        # Operational metrics
-        st.markdown("### 📊 Operational Metrics")
-        col1, col2, col3, col4, col5 = st.columns(5)
+        # Quick Assessment Card
+        st.markdown("### 📊 Quick Assessment")
+        col_assess1, col_assess2, col_assess3 = st.columns(3)
+        
+        with col_assess1:
+            st.metric("Usability Score", f"{usability['score']}/100",
+                     help="Overall data usability based on completeness, duplicates, and diversity")
+        with col_assess2:
+            st.metric("Quality Grade", usability['grade'],
+                     help="A=Excellent, B=Good, C=Fair, D=Poor, F=Critical")
+        with col_assess3:
+            st.metric("Cleanup Effort", cleanup_effort,
+                     help="Estimated time to address data quality issues")
+        
+        # Data Overview
+        st.markdown("---")
+        st.markdown("### 📋 Data Overview")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        usable_records = profile['overview']['rows'] - profile['overview']['duplicate_rows']
         
         with col1:
             st.metric("Total Records", f"{profile['overview']['rows']:,}")
         with col2:
             st.metric("Usable Records", f"{usable_records:,}",
-                     delta=f"-{profile['overview']['duplicate_rows']} duplicates" if profile['overview']['duplicate_rows'] > 0 else "No duplicates")
+                     delta=f"{(usable_records/profile['overview']['rows']*100):.1f}%")
         with col3:
-            st.metric("Duplicate Rate", f"{duplicate_rate:.1f}%",
-                     delta="Clean" if duplicate_rate == 0 else "Action Needed",
-                     delta_color="normal" if duplicate_rate == 0 else "inverse")
+            st.metric("Completeness", f"{usability['completeness_pct']:.1f}%",
+                     delta="Good" if usability['completeness_pct'] >= 95 else "Needs Work",
+                     delta_color="normal" if usability['completeness_pct'] >= 95 else "inverse")
         with col4:
-            st.metric("Missing Values", profile['overview']['total_missing'],
-                     delta=f"{completeness:.0f}% complete")
-        with col5:
-            st.metric("Status", readiness)
+            if freshness['has_dates']:
+                freshness_label = freshness.get('freshness', 'Unknown')
+                st.metric("Data Freshness", freshness_label,
+                         help=f"Based on {freshness['column']}")
+            else:
+                st.metric("Data Freshness", "N/A",
+                         help="No date columns detected")
         
-        # Action items
+        # Top 5 Key Columns
         st.markdown("---")
-        st.markdown("### 🎯 Action Items")
+        st.markdown("### 🎯 Top 5 Key Columns")
+        st.caption("Most important columns based on completeness, uniqueness, and data type")
         
-        action_items = []
-        if profile['overview']['duplicate_rows'] > 0:
-            action_items.append(f"Remove {profile['overview']['duplicate_rows']} duplicate records")
-        if profile['overview']['total_missing'] > 0:
-            action_items.append(f"Address {profile['overview']['total_missing']} missing values")
-        if completeness < 95:
-            action_items.append(f"Improve data completeness from {completeness:.1f}% to 95%+")
+        key_cols_data = []
+        for col in key_columns:
+            key_cols_data.append({
+                'Column': col['name'],
+                'Type': col['type'],
+                'Importance': f"{col['score']:.0f}/100",
+                'Why': col['reasons']
+            })
         
-        if action_items:
-            for item in action_items:
-                st.warning(f"📋 {item}")
+        if key_cols_data:
+            st.dataframe(pd.DataFrame(key_cols_data), use_container_width=True, hide_index=True)
+        
+        # Critical Issues
+        if critical_fields:
+            st.markdown("---")
+            st.markdown(f"### 🚨 Critical Issues ({len(critical_fields)})")
+            
+            for field in critical_fields[:3]:  # Show top 3
+                st.warning(
+                    f"{field['severity']} **{field['column']}**: "
+                    f"{field['missing_count']:,} missing values ({field['missing_pct']:.1f}%) - "
+                    f"Impact: {field['impact']}"
+                )
+        
+        # Prioritized Action Items
+        st.markdown("---")
+        st.markdown("### ✅ Recommended Actions (Prioritized)")
+        
+        if actions:
+            for action in actions:
+                with st.container():
+                    col_action1, col_action2, col_action3 = st.columns([2, 1, 1])
+                    with col_action1:
+                        st.markdown(f"**{action['priority']}**: {action['action']}")
+                    with col_action2:
+                        st.caption(f"⏱️ {action['time_estimate']}")
+                    with col_action3:
+                        st.caption(f"📈 {action['impact']}")
         else:
-            st.success("✅ No immediate action items - data quality is excellent!")
+            st.success("✅ No action items - data quality is excellent!")
         
-        # Operational insights from narrative
+        # Sample Data Preview
+        st.markdown("---")
+        st.markdown("### 👀 Sample Records")
+        st.caption("First 5 rows of your dataset")
+        st.dataframe(df.head(5), use_container_width=True)
+        
+        # Top Values for Categorical Columns
+        top_values = get_top_categorical_values(df, max_cols=3, max_values=5)
+        
+        if top_values:
+            st.markdown("---")
+            st.markdown("### 🏆 Top Values (Categorical Columns)")
+            
+            cols = st.columns(min(len(top_values), 3))
+            for idx, (col_name, values) in enumerate(top_values.items()):
+                with cols[idx]:
+                    st.markdown(f"**{col_name}**")
+                    for val in values:
+                        st.caption(f"• {val['value']}: {val['count']:,} ({val['pct']}%)")
+        
+        # AI-Generated Insights (if available)
         if narrative:
             st.markdown("---")
-            st.markdown("### 💡 Operational Insights")
+            st.markdown("### 💡 AI-Generated Insights")
+            
             if narrative.get('insights'):
                 for insight in narrative['insights']:
                     st.info(f"💡 {insight}")
             
             if narrative.get('actions'):
-                st.markdown("### 📝 Recommended Actions")
+                st.markdown("**Additional Recommendations:**")
                 for i, action in enumerate(narrative['actions'], 1):
                     st.markdown(f"{i}. {action}")
-                    
+        
     except Exception as e:
         st.error(f"Error displaying business dashboard: {str(e)}")
+        import traceback
+        st.code(traceback.format_exc())

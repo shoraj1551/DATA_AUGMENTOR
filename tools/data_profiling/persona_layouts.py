@@ -324,6 +324,27 @@ def display_business_persona(profile, anomalies, insights, df, narrative):
         st.markdown("### 📋 Column Quality Summary")
         st.caption("Null percentage and outlier detection for all columns")
         
+        with st.expander("ℹ️ How are outliers detected?"):
+            st.markdown("""
+            **Outlier Detection Formula (IQR Method):**
+            
+            1. Calculate Q1 (25th percentile) and Q3 (75th percentile)
+            2. Calculate IQR = Q3 - Q1
+            3. **Lower Bound** = Q1 - 1.5 × IQR
+            4. **Upper Bound** = Q3 + 1.5 × IQR
+            5. Values outside these bounds are outliers
+            
+            **Severity Levels:**
+            - 🔴 **High**: >10% of values are outliers
+            - 🟡 **Medium**: 5-10% of values are outliers
+            - 🟢 **Low**: <5% of values are outliers
+            
+            **Quality Indicators:**
+            - ✅ **Good**: <10% missing values
+            - 🟡 **Fair**: 10-20% missing values
+            - 🔴 **Poor**: >20% missing values
+            """)
+        
         try:
             quality_summary = get_column_quality_summary(profile, df)
             st.dataframe(quality_summary, use_container_width=True, hide_index=True)
@@ -383,15 +404,36 @@ def display_business_persona(profile, anomalies, insights, df, narrative):
         st.markdown("---")
         st.markdown("### 💡 AI-Generated Insights")
         
-        if narrative and (narrative.get('insights') or narrative.get('actions')):
-            if narrative.get('insights'):
-                for insight in narrative['insights']:
-                    st.info(f"💡 {insight}")
+        # Debug: Show narrative status
+        if narrative:
+            has_insights = bool(narrative.get('insights'))
+            has_actions = bool(narrative.get('actions'))
+            has_summary = bool(narrative.get('executive_summary'))
             
-            if narrative.get('actions'):
-                st.markdown("**Additional Recommendations:**")
+            if has_summary:
+                st.info(f"📝 **Summary:** {narrative.get('executive_summary')}")
+            
+            if has_insights:
+                st.markdown("**Key Insights:**")
+                for insight in narrative['insights']:
+                    st.success(f"✓ {insight}")
+            
+            if has_actions:
+                st.markdown("**AI Recommendations:**")
                 for i, action in enumerate(narrative['actions'], 1):
                     st.markdown(f"{i}. {action}")
+            
+            # If narrative exists but all fields are empty
+            if not (has_insights or has_actions or has_summary):
+                st.warning("⚠️ AI narrative was generated but returned empty results.")
+                st.caption("This might be due to:")
+                st.caption("• LLM response parsing issues")
+                st.caption("• API rate limits")
+                st.caption("• Model not following the expected format")
+                
+                # Show raw narrative for debugging
+                with st.expander("🔍 Debug: View Raw Narrative"):
+                    st.json(narrative)
         else:
             st.info("ℹ️ AI insights not generated. Make sure 'Generate AI Insights' is checked when profiling.")
             st.caption("Tip: The insights above are rule-based and always available. AI insights provide additional LLM-powered analysis.")

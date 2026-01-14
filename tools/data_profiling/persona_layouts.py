@@ -113,6 +113,15 @@ def display_technical_persona(profile, anomalies, insights, df, narrative):
                 st.info(f"No columns found matching '{search_term}'")
         except Exception as e:
             st.error(f"Error displaying column statistics: {str(e)}")
+        
+        # Data Preview - Top 5 Rows
+        st.markdown("---")
+        st.markdown("### 👁️ Data Preview")
+        st.caption("First 5 rows of the dataset")
+        try:
+            st.dataframe(df.head(5), use_container_width=True)
+        except Exception as e:
+            st.error(f"Error displaying data preview: {str(e)}")
 
     
     with tab2:
@@ -626,6 +635,15 @@ CRITICAL ISSUES:
             st.dataframe(quality_summary, use_container_width=True, hide_index=True)
         except Exception as e:
             st.warning(f"Could not generate column quality summary: {str(e)}")
+        
+        # Data Preview - Top 5 Rows
+        st.markdown("---")
+        st.markdown("### 👁️ Data Preview")
+        st.caption("First 5 rows of your dataset")
+        try:
+            st.dataframe(df.head(5), use_container_width=True)
+        except Exception as e:
+            st.error(f"Error displaying data preview: {str(e)}")
         
         # Critical Issues
         if critical_fields:

@@ -26,8 +26,10 @@ class InsightGenerator:
         prompt = self._build_prompt(profile, anomalies)
         
         try:
-            response = self.client.chat.completions.create(
-                model="google/gemini-2.0-flash-exp:free",
+            from common.llm.client import call_with_fallback
+            
+            response = call_with_fallback(
+                use_case="data_profiling",
                 messages=[
                     {
                         "role": "system",

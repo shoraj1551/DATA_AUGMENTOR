@@ -28,8 +28,10 @@ class InsightNarrator:
         prompt = self._build_prompt(profile, anomalies, audience)
         
         try:
-            response = self.client.chat.completions.create(
-                model="google/gemini-2.0-flash-exp:free",
+            from common.llm.client import call_with_fallback
+            
+            response = call_with_fallback(
+                use_case="data_profiling",
                 messages=[
                     {
                         "role": "system",
@@ -48,7 +50,7 @@ class InsightNarrator:
             
         except Exception as e:
             return {
-                'error': str(e),
+                "error": str(e),
                 'executive_summary': '',
                 'insights': [],
                 'risks': [],

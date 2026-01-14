@@ -55,7 +55,26 @@ def render():
             file_ext = uploaded_file.name.split('.')[-1].lower()
             
             if file_ext == 'csv':
-                df = pd.read_csv(uploaded_file)
+                # Try to detect delimiter and encoding
+                try:
+                    # First, try with default settings
+                    df = pd.read_csv(uploaded_file)
+                except Exception:
+                    # If that fails, try common delimiters
+                    uploaded_file.seek(0)  # Reset file pointer
+                    for delimiter in [',', ';', '\t', '|']:
+                        try:
+                            uploaded_file.seek(0)
+                            df = pd.read_csv(uploaded_file, delimiter=delimiter)
+                            # Check if we got more than 1 column
+                            if len(df.columns) > 1:
+                                break
+                        except Exception:
+                            continue
+                    else:
+                        # If all delimiters fail, try with python engine
+                        uploaded_file.seek(0)
+                        df = pd.read_csv(uploaded_file, engine='python', sep=None)
             elif file_ext in ['xlsx', 'xls']:
                 df = pd.read_excel(uploaded_file)
             elif file_ext == 'parquet':

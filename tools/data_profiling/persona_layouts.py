@@ -175,7 +175,7 @@ def display_technical_persona(profile, anomalies, insights, df, narrative):
 
 
 def display_executive_persona(profile, anomalies, insights, df, narrative):
-    """Executive persona: Clean KPI dashboard"""
+    """Executive persona: Clean KPI dashboard with NL Q&A"""
     
     st.markdown("## 📊 Executive Dashboard")
     
@@ -186,7 +186,7 @@ def display_executive_persona(profile, anomalies, insights, df, narrative):
         duplicate_penalty = (profile['overview']['duplicate_rows'] / profile['overview']['rows'] * 10) if profile['overview']['rows'] > 0 else 0
         quality_score = max(0, completeness - duplicate_penalty)
         
-        # Large KPI cards
+        # Large KPI cards (more compact)
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Total Records", f"{profile['overview']['rows']:,}", 
@@ -207,36 +207,181 @@ def display_executive_persona(profile, anomalies, insights, df, narrative):
             st.metric("Reliability", reliability,
                      help="Data reliability assessment")
         
-        # Quality gauge
+        # Tabbed interface
         st.markdown("---")
-        col_gauge, col_summary = st.columns([1, 1])
+        tab1, tab2, tab3 = st.tabs(["📊 Overview", "💬 Ask Questions", "📈 Insights"])
         
-        with col_gauge:
-            try:
-                gauge_fig = create_quality_gauge(quality_score)
-                st.plotly_chart(gauge_fig, use_container_width=True)
-            except Exception as e:
-                st.error(f"Error creating gauge: {str(e)}")
-        
-        with col_summary:
-            if narrative:
-                st.markdown("### 📖 Executive Summary")
-                st.info(narrative.get('executive_summary', 'No summary available'))
-                
-                if narrative.get('actions'):
-                    st.markdown("### 🎯 Strategic Recommendations")
-                    for i, action in enumerate(narrative['actions'][:3], 1):
-                        st.markdown(f"{i}. {action}")
-        
-        # Risk alerts
-        if narrative and narrative.get('risks'):
+        with tab1:
+            # Compact layout with gauge and summary side by side
+            col_gauge, col_summary = st.columns([1, 2])
+            
+            with col_gauge:
+                try:
+                    gauge_fig = create_quality_gauge(quality_score)
+                    # Make gauge smaller
+                    gauge_fig.update_layout(height=250)
+                    st.plotly_chart(gauge_fig, use_container_width=True)
+                except Exception as e:
+                    st.error(f"Error creating gauge: {str(e)}")
+            
+            with col_summary:
+                if narrative:
+                    st.markdown("### 📝 Executive Summary")
+                    
+                    # Make summary scannable with bullets
+                    summary_text = narrative.get('executive_summary', 'No summary available')
+                    
+                    # Try to convert to bullet points if it's plain text
+                    if summary_text and not summary_text.startswith('•'):
+                        # Split into sentences and make bullets
+                        sentences = [s.strip() for s in summary_text.split('.') if s.strip()]
+                        if len(sentences) > 1:
+                            for sentence in sentences[:3]:  # Top 3 points
+                                st.markdown(f"• {sentence}")
+                        else:
+                            st.info(summary_text)
+                    else:
+                        st.info(summary_text)
+                else:
+                    st.info("💡 Enable 'Generate AI Insights' to see executive summary")
+            
+            # Strategic Recommendations with priority badges
             st.markdown("---")
-            st.markdown("### ⚠️ Strategic Risks")
-            for risk in narrative['risks']:
-                st.warning(f"⚠️ {risk}")
+            st.markdown("### 🎯 Strategic Recommendations")
+            
+            if narrative and narrative.get('actions'):
+                for i, action in enumerate(narrative['actions'][:3], 1):
+                    # Add priority badge
+                    if i == 1:
+                        priority = "🔴 High Priority"
+                    elif i == 2:
+                        priority = "🟡 Medium Priority"
+                    else:
+                        priority = "🟢 Low Priority"
+                    
+                    with st.container():
+                        st.markdown(f"**{priority}** | {action}")
+            else:
+                st.info("💡 Enable 'Generate AI Insights' to see recommendations")
+            
+            # Risk alerts
+            if narrative and narrative.get('risks'):
+                st.markdown("---")
+                st.markdown("### ⚠️ Strategic Risks")
+                for risk in narrative['risks']:
+                    st.warning(f"⚠️ {risk}")
+        
+        with tab2:
+            # Natural Language Q&A Interface
+            st.markdown("### 💬 Ask Me Anything About Your Data")
+            st.caption("Ask questions in plain English and get instant answers")
+            
+            # Initialize NL QA
+            from tools.data_profiling.nl_qa import NaturalLanguageQA
+            
+            if 'qa_history' not in st.session_state:
+                st.session_state.qa_history = []
+            
+            qa_processor = NaturalLanguageQA(df, profile)
+            
+            # Suggested questions
+            st.markdown("**💡 Suggested Questions:**")
+            suggestions = qa_processor.get_suggested_questions()
+            
+            cols = st.columns(3)
+            for idx, suggestion in enumerate(suggestions[:6]):
+                col_idx = idx % 3
+                with cols[col_idx]:
+                    if st.button(suggestion, key=f"suggest_{idx}", use_container_width=True):
+                        # Process the suggested question
+                        with st.spinner("Thinking..."):
+                            result = qa_processor.ask(suggestion)
+                            st.session_state.qa_history.append({
+                                'question': suggestion,
+                                'result': result
+                            })
+                        st.rerun()
+            
+            # Question input
+            st.markdown("---")
+            question = st.text_input(
+                "Your Question:",
+                placeholder="e.g., What are the top 3 data quality issues?",
+                key="executive_question"
+            )
+            
+            col_ask, col_clear = st.columns([3, 1])
+            with col_ask:
+                if st.button("🔍 Ask", type="primary", use_container_width=True):
+                    if question:
+                        with st.spinner("Analyzing..."):
+                            result = qa_processor.ask(question)
+                            st.session_state.qa_history.append({
+                                'question': question,
+                                'result': result
+                            })
+                        st.rerun()
+            
+            with col_clear:
+                if st.button("🗑️ Clear History", use_container_width=True):
+                    st.session_state.qa_history = []
+                    st.rerun()
+            
+            # Display Q&A history (most recent first)
+            if st.session_state.qa_history:
+                st.markdown("---")
+                st.markdown("### 📜 Conversation History")
+                
+                for idx, qa in enumerate(reversed(st.session_state.qa_history)):
+                    with st.expander(f"Q: {qa['question']}", expanded=(idx == 0)):
+                        result = qa['result']
+                        
+                        # Display answer
+                        st.markdown(f"**Answer:**")
+                        st.info(result.get('answer', 'No answer available'))
+                        
+                        # Display data if available
+                        if 'data' in result and result['data'] is not None:
+                            st.markdown("**Data:**")
+                            if isinstance(result['data'], pd.DataFrame):
+                                st.dataframe(result['data'], use_container_width=True)
+                            else:
+                                st.write(result['data'])
+        
+        with tab3:
+            # AI-Generated Insights
+            st.markdown("### 💡 AI-Generated Insights")
+            
+            if insights:
+                st.markdown(f"**Summary:** {insights.get('summary', 'No summary available')}")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    if insights.get('key_findings'):
+                        st.markdown("**🔍 Key Findings:**")
+                        for finding in insights['key_findings']:
+                            st.success(f"✓ {finding}")
+                
+                with col2:
+                    if insights.get('recommendations'):
+                        st.markdown("**💡 Recommendations:**")
+                        for rec in insights['recommendations']:
+                            st.markdown(f"• {rec}")
+                
+                if insights.get('quality_issues'):
+                    st.markdown("---")
+                    st.markdown("**⚠️ Data Quality Issues:**")
+                    for issue in insights['quality_issues']:
+                        st.warning(f"• {issue}")
+            else:
+                st.info("💡 Enable 'Generate AI Insights' when profiling to see detailed analysis")
                 
     except Exception as e:
         st.error(f"Error displaying executive dashboard: {str(e)}")
+        import traceback
+        st.code(traceback.format_exc())
+
 
 
 def display_business_persona(profile, anomalies, insights, df, narrative):

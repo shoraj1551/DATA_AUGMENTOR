@@ -60,6 +60,16 @@ class InsightNarrator:
     def _build_prompt(self, profile: dict, anomalies: list, audience: str) -> str:
         """Build audience-specific prompt for narrative generation"""
         
+        # Build actual column list
+        column_list = []
+        for col in profile['columns'][:15]:  # First 15 columns
+            column_list.append(f"{col['name']} ({col.get('dtype', 'unknown')})")
+        
+        if len(profile['columns']) > 15:
+            column_list.append(f"... and {len(profile['columns']) - 15} more")
+        
+        columns_text = ", ".join(column_list)
+        
         # Base context available to all audiences
         data_context = f"""
 DATASET OVERVIEW:
@@ -67,6 +77,11 @@ DATASET OVERVIEW:
 - Columns: {profile['overview']['columns']}
 - Missing Values: {profile['overview']['total_missing']}
 - Duplicates: {profile['overview']['duplicate_rows']}
+
+ACTUAL COLUMNS IN THIS DATASET:
+{columns_text}
+
+CRITICAL INSTRUCTION: Only reference columns that are listed above. Do NOT mention columns like "email", "customer", "user", "segment" unless they appear in the actual columns list.
 
 ANOMALIES DETECTED:
 {json.dumps(anomalies[:5], indent=2)}

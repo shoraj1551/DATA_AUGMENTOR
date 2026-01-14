@@ -223,4 +223,16 @@ RECOMMENDED ACTIONS:
                 narrative['executive_summary'] += line + ' '
         
         narrative['executive_summary'] = narrative['executive_summary'].strip()
+        
+        # Fallback: If executive_summary is still empty, use first paragraph
+        if not narrative['executive_summary'] and text:
+            # Take first non-empty paragraph as summary
+            paragraphs = [p.strip() for p in text.split('\n\n') if p.strip() and not p.strip().startswith('-')]
+            if paragraphs:
+                # Get first paragraph that's not a header
+                for para in paragraphs:
+                    if not any(keyword in para.upper() for keyword in ['SUMMARY:', 'INSIGHTS:', 'RISKS:', 'ACTIONS:']):
+                        narrative['executive_summary'] = para
+                        break
+        
         return narrative

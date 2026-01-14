@@ -67,10 +67,17 @@ def render_profile_generation():
             st.error("Please provide Company Name and Country")
             return
 
+        # Clear previous session state
+        if 'company_profile' in st.session_state:
+            del st.session_state.company_profile
+        if 'qa_answer' in st.session_state:
+            del st.session_state.qa_answer
+
         with st.spinner("🕵️‍♂️ Investigating company... (Verifying registry, scraping web, assessing risk)"):
             try:
                 profile = build_company_profile(company_name, country, website, industry)
                 st.session_state.company_profile = profile
+                st.success("✅ Company profile generated successfully!")
                 
                 # Force rerun to show results
                 st.rerun()

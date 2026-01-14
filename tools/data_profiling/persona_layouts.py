@@ -77,11 +77,43 @@ def display_technical_persona(profile, anomalies, insights, df, narrative):
         # Column Statistics
         st.markdown("---")
         st.markdown("### 📋 Column Statistics")
+        
+        # Add search and export options
+        col_search, col_export = st.columns([3, 1])
+        
+        with col_search:
+            search_term = st.text_input(
+                "🔍 Search columns",
+                placeholder="Type to filter columns by name...",
+                key="tech_column_search"
+            )
+        
+        with col_export:
+            st.markdown("**Export:**")
+            if st.button("📥 Download CSV", key="export_data", use_container_width=True):
+                csv = df.to_csv(index=False)
+                st.download_button(
+                    label="💾 Save File",
+                    data=csv,
+                    file_name=f"profiled_data_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv",
+                    key="download_csv"
+                )
+        
         try:
             columns_df = pd.DataFrame(profile['columns'])
+            
+            # Apply search filter
+            if search_term:
+                columns_df = columns_df[columns_df['name'].str.contains(search_term, case=False, na=False)]
+            
             st.dataframe(columns_df, use_container_width=True, height=400)
+            
+            if search_term and len(columns_df) == 0:
+                st.info(f"No columns found matching '{search_term}'")
         except Exception as e:
             st.error(f"Error displaying column statistics: {str(e)}")
+
     
     with tab2:
         st.markdown("### Distribution Analysis")
@@ -419,6 +451,78 @@ def display_business_persona(profile, anomalies, insights, df, narrative):
         with col_assess3:
             st.metric("Cleanup Effort", cleanup_effort,
                      help="Estimated time to address data quality issues")
+        
+        # Quick Fixes Section
+        st.markdown("---")
+        st.markdown("### ⚡ Quick Fixes")
+        st.caption("One-click actions to improve your data quality")
+        
+        col_fix1, col_fix2, col_fix3 = st.columns(3)
+        
+        with col_fix1:
+            if profile['overview']['duplicate_rows'] > 0:
+                if st.button(f"🗑️ Remove {profile['overview']['duplicate_rows']} Duplicates", 
+                            key="remove_dupes", use_container_width=True):
+                    # Remove duplicates and offer download
+                    df_cleaned = df.drop_duplicates()
+                    csv = df_cleaned.to_csv(index=False)
+                    st.download_button(
+                        label=f"💾 Download ({len(df_cleaned)} rows)",
+                        data=csv,
+                        file_name=f"cleaned_no_dupes_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                        mime="text/csv",
+                        key="download_no_dupes"
+                    )
+                    st.success(f"✅ Removed {profile['overview']['duplicate_rows']} duplicates!")
+            else:
+                st.info("✅ No duplicates found")
+        
+        with col_fix2:
+            usable_count = profile['overview']['rows'] - profile['overview']['duplicate_rows']
+            if st.button(f"📥 Export Usable Records ({usable_count})", 
+                        key="export_usable", use_container_width=True):
+                # Export only usable records (no duplicates)
+                df_usable = df.drop_duplicates()
+                csv = df_usable.to_csv(index=False)
+                st.download_button(
+                    label="💾 Download Usable Data",
+                    data=csv,
+                    file_name=f"usable_records_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv",
+                    key="download_usable"
+                )
+        
+        with col_fix3:
+            if st.button("📊 Export Full Report", 
+                        key="export_report", use_container_width=True):
+                # Create a simple text report
+                report = f"""DATA QUALITY REPORT
+Generated: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+USABILITY SCORE: {usability['score']}/100 (Grade {usability['grade']})
+
+OVERVIEW:
+- Total Records: {profile['overview']['rows']:,}
+- Usable Records: {usable_count:,}
+- Completeness: {usability['completeness_pct']:.1f}%
+- Duplicate Rate: {usability['duplicate_rate']:.1f}%
+
+CRITICAL ISSUES:
+"""
+                for field in critical_fields[:5]:
+                    report += f"- {field['column']}: {field['missing_pct']:.1f}% missing ({field['impact']} impact)\n"
+                
+                report += f"\nRECOMMENDED ACTIONS:\n"
+                for i, action in enumerate(actions, 1):
+                    report += f"{i}. [{action['priority']}] {action['action']} (Est: {action['time_estimate']})\n"
+                
+                st.download_button(
+                    label="💾 Download Report",
+                    data=report,
+                    file_name=f"data_quality_report_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.txt",
+                    mime="text/plain",
+                    key="download_report"
+                )
         
         # Data Overview
         st.markdown("---")

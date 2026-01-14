@@ -240,21 +240,82 @@ def display_profile_results(profile, anomalies, insights, df, narrative=None, au
             for issue in insights['quality_issues']:
                 st.warning(f"• {issue}")
     
-    # Overview
+    # Overview - Audience-Specific Metrics
     st.markdown("---")
     st.markdown("## 📊 Dataset Overview")
     
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        st.metric("Rows", f"{profile['overview']['rows']:,}")
-    with col2:
-        st.metric("Columns", profile['overview']['columns'])
-    with col3:
-        st.metric("Memory", f"{profile['overview']['memory_usage_mb']} MB")
-    with col4:
-        st.metric("Duplicates", profile['overview']['duplicate_rows'])
-    with col5:
-        st.metric("Missing", profile['overview']['total_missing'])
+    # Get current audience from session state (default to technical if not set)
+    current_audience = st.session_state.get('audience', 'technical')
+    
+    if current_audience == 'technical':
+        # Technical: Detailed technical metrics
+        col1, col2, col3, col4, col5, col6 = st.columns(6)
+        with col1:
+            st.metric("Rows", f"{profile['overview']['rows']:,}")
+        with col2:
+            st.metric("Columns", profile['overview']['columns'])
+        with col3:
+            st.metric("Memory", f"{profile['overview']['memory_usage_mb']} MB")
+        with col4:
+            st.metric("Duplicates", profile['overview']['duplicate_rows'])
+        with col5:
+            st.metric("Missing", profile['overview']['total_missing'])
+        with col6:
+            # Calculate null density
+            total_cells = profile['overview']['rows'] * profile['overview']['columns']
+            null_density = (profile['overview']['total_missing'] / total_cells * 100) if total_cells > 0 else 0
+            st.metric("Null Density", f"{null_density:.1f}%")
+    
+    elif current_audience == 'executive':
+        # Executive: High-level business metrics
+        total_cells = profile['overview']['rows'] * profile['overview']['columns']
+        completeness = ((total_cells - profile['overview']['total_missing']) / total_cells * 100) if total_cells > 0 else 0
+        
+        # Data Quality Score (simple heuristic: completeness - duplicate penalty)
+        duplicate_penalty = (profile['overview']['duplicate_rows'] / profile['overview']['rows'] * 10) if profile['overview']['rows'] > 0 else 0
+        quality_score = max(0, completeness - duplicate_penalty)
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Records", f"{profile['overview']['rows']:,}")
+        with col2:
+            st.metric("Data Quality Score", f"{quality_score:.0f}/100", 
+                     delta=f"{completeness:.0f}% complete" if completeness >= 90 else None,
+                     delta_color="normal" if completeness >= 90 else "inverse")
+        with col3:
+            st.metric("Completeness", f"{completeness:.1f}%",
+                     delta="Good" if completeness >= 95 else "Needs Attention",
+                     delta_color="normal" if completeness >= 95 else "inverse")
+        with col4:
+            reliability = "High" if profile['overview']['duplicate_rows'] == 0 and completeness > 95 else \
+                         "Medium" if completeness > 85 else "Low"
+            st.metric("Data Reliability", reliability)
+    
+    else:  # business
+        # Business: Operational metrics
+        total_cells = profile['overview']['rows'] * profile['overview']['columns']
+        completeness = ((total_cells - profile['overview']['total_missing']) / total_cells * 100) if total_cells > 0 else 0
+        usable_records = profile['overview']['rows'] - profile['overview']['duplicate_rows']
+        duplicate_rate = (profile['overview']['duplicate_rows'] / profile['overview']['rows'] * 100) if profile['overview']['rows'] > 0 else 0
+        
+        col1, col2, col3, col4, col5 = st.columns(5)
+        with col1:
+            st.metric("Total Records", f"{profile['overview']['rows']:,}")
+        with col2:
+            st.metric("Usable Records", f"{usable_records:,}",
+                     delta=f"-{profile['overview']['duplicate_rows']} duplicates" if profile['overview']['duplicate_rows'] > 0 else "No duplicates")
+        with col3:
+            st.metric("Duplicate Rate", f"{duplicate_rate:.1f}%",
+                     delta="Clean" if duplicate_rate == 0 else "Action Needed",
+                     delta_color="normal" if duplicate_rate == 0 else "inverse")
+        with col4:
+            st.metric("Missing Values", profile['overview']['total_missing'],
+                     delta=f"{completeness:.0f}% complete")
+        with col5:
+            # Operational readiness
+            readiness = "Ready" if completeness > 95 and duplicate_rate < 1 else \
+                       "Needs Cleanup" if completeness > 85 else "Critical Issues"
+            st.metric("Operational Status", readiness)
     
     # Anomalies
     if anomalies:

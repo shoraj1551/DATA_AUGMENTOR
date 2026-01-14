@@ -74,6 +74,7 @@ ANOMALIES DETECTED:
         if audience == 'technical':
             return f"""
 {data_context}
+- Memory Usage: {profile['overview']['memory_usage_mb']} MB
 
 You are a Senior Data Engineer conducting a technical health check.
 Generate a TECHNICAL narrative for Data Scientists/Engineers.

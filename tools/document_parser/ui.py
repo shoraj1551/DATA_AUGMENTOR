@@ -231,7 +231,14 @@ def render():
                             st.success(f"✅ Extracted {len(dfs)} dataset(s).")
                             for name, df in dfs:
                                 with st.expander(f"Dataset: {name}", expanded=True):
-                                    st.dataframe(df)
+                                    # Preview based on selected format
+                                    if export_format == "JSON":
+                                        st.markdown("**JSON Preview:**")
+                                        json_preview = df.to_dict(orient='records')
+                                        st.json(json_preview)
+                                    else:  # Table (CSV)
+                                        st.markdown("**Table Preview:**")
+                                        st.dataframe(df)
                                     
                                     # Export options based on selected format
                                     col1, col2 = st.columns(2)

@@ -64,8 +64,8 @@ TOOL_REGISTRY = {
     "data_profiling": {
         "name": "Data Profiling & Auto-EDA",
         "category": "analytics",
-        "description": "Automatically profile datasets and generate insights",
-        "status": "gamma"
+        "description": "Profile CSV, Excel, Parquet, JSON datasets with AI insights",
+        "status": "beta"
     },
     "dq_rules": {
         "name": "DQ Rule Generator",

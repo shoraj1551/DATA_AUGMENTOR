@@ -16,12 +16,12 @@ def render():
     """Render the Data Profiling page"""
     render_page_header(
         title="Data Profiling & Auto-EDA",
-        subtitle="Automatically profile datasets and generate actionable insights with narratives",
+        subtitle="Automatically profile datasets and generate actionable insights",
         icon="📊",
-        status="gamma"
+        status="beta"
     )
     
-    st.info("🧪 **Gamma Version** - Experimental feature. Feedback welcome!")
+    st.info("✨ **Beta Version** - Enhanced with AI Insights & Multi-format Support")
     
     # File Upload
     # File Upload

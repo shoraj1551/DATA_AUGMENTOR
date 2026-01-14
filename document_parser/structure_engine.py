@@ -66,6 +66,7 @@ def suggest_schema(text):
     Returns tuple: (fields_list, error_message)
     """
     from common.llm.client import call_with_fallback
+    import json
     
     system_prompt = """You are an expert Data Architect and Document Analyst.
     Analyze the document carefully and identify ALL extractable data fields.
@@ -119,6 +120,18 @@ def suggest_schema(text):
             # No fields found - return helpful message
             return ([], "No structured data fields detected in the document. The document may contain only unstructured text.")
         
+    except json.JSONDecodeError as e:
+        # JSON parsing error - likely malformed response from AI
+        return ([], f"Unable to extract structured data patterns from this document. The document may be too complex or contain unstructured text only.")
     except Exception as e:
-        # Return error message
-        return ([], f"Analysis failed: {str(e)}. Please try again or check your API key.")
+        error_str = str(e)
+        # Provide specific error messages based on error type
+        if "429" in error_str or "rate limit" in error_str.lower():
+            return ([], "Rate limit reached. Please wait a moment and try again.")
+        elif "timeout" in error_str.lower():
+            return ([], "Request timed out. The document may be too large. Try with a smaller document.")
+        elif "api" in error_str.lower() and "key" in error_str.lower():
+            return ([], "API key issue detected. Please check your OpenRouter API key configuration.")
+        else:
+            # Generic error with actual error message
+            return ([], f"Analysis failed: {error_str}")

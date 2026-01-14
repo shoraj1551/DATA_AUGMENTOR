@@ -55,47 +55,75 @@ class InsightGenerator:
             }
     
     def _build_prompt(self, profile: dict, anomalies: list) -> str:
-        """Build prompt for LLM"""
-        return f"""
-Analyze this dataset profile and provide insights:
+        """Build prompt for LLM with actual data context"""
+        
+        # Build column details
+        column_details = []
+        for col in profile['columns'][:20]:  # First 20 columns
+            col_info = f"- **{col['name']}** ({col.get('dtype', 'unknown')}): "
+            col_info += f"{col['unique']} unique values, "
+            col_info += f"{col['missing']} missing ({(col['missing']/profile['overview']['rows']*100):.1f}%)"
+            
+            # Add top values for categorical columns
+            if col.get('dtype') == 'object' and col['unique'] < 10:
+                col_info += f" | Top values: {col.get('top_value', 'N/A')}"
+            
+            column_details.append(col_info)
+        
+        if len(profile['columns']) > 20:
+            column_details.append(f"... and {len(profile['columns']) - 20} more columns")
+        
+        columns_text = "\n".join(column_details)
+        
+        # Build anomalies text
+        anomalies_text = ""
+        if anomalies:
+            for anomaly in anomalies[:10]:  # Top 10 anomalies
+                anomalies_text += f"- {anomaly.get('severity', 'unknown').upper()}: {anomaly.get('type', 'Unknown')} in column '{anomaly.get('column', 'N/A')}' - {anomaly.get('detail', 'No details')}\n"
+        else:
+            anomalies_text = "No anomalies detected"
+        
+        return f"""Analyze this SPECIFIC dataset and provide ACCURATE insights based on the ACTUAL data below.
+
+CRITICAL: Base your analysis ONLY on the column names, data types, and statistics provided. Do NOT make up generic insights.
 
 DATASET OVERVIEW:
-- Rows: {profile['overview']['rows']}
+- Rows: {profile['overview']['rows']:,}
 - Columns: {profile['overview']['columns']}
 - Memory: {profile['overview']['memory_usage_mb']} MB
 - Duplicates: {profile['overview']['duplicate_rows']}
-- Missing Values: {profile['overview']['total_missing']}
+- Total Missing Values: {profile['overview']['total_missing']:,}
+
+ACTUAL COLUMNS IN THIS DATASET:
+{columns_text}
 
 ANOMALIES DETECTED:
-{json.dumps(anomalies, indent=2)}
+{anomalies_text}
 
-MISSING DATA:
-{json.dumps(profile['missing_data'], indent=2)}
-
-Please provide:
-1. **Summary**: 2-3 sentence overview of the dataset quality
-2. **Key Findings**: 3-5 bullet points of important observations
-3. **Data Quality Issues**: List any problems found
-4. **Recommendations**: 3-5 actionable next steps
+INSTRUCTIONS:
+1. Look at the ACTUAL column names above (e.g., if you see 'CO(GT)', 'PT08.S1(CO)', mention those specifically)
+2. Reference REAL data types and statistics shown
+3. Do NOT mention generic columns like "email", "customer", "segment" unless they actually exist
+4. Be specific about which columns have issues
 
 Format your response as:
 
 SUMMARY:
-[Your summary here]
+[2-3 sentence overview mentioning ACTUAL column names from the data]
 
 KEY FINDINGS:
-- [Finding 1]
+- [Finding 1 with specific column names]
 - [Finding 2]
 - [Finding 3]
 
 DATA QUALITY ISSUES:
-- [Issue 1]
+- [Issue 1 with specific column name]
 - [Issue 2]
 
 RECOMMENDATIONS:
-- [Recommendation 1]
-- [Recommendation 2]
-- [Recommendation 3]
+- [Action 1 for specific column]
+- [Action 2]
+- [Action 3]
 """
     
     def _parse_insights(self, text: str) -> dict:

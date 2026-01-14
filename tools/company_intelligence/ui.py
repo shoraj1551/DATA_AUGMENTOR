@@ -29,7 +29,7 @@ def render():
         title="Company Intelligence & Market Research Copilot",
         subtitle="Convert scattered company data into structured, queryable intelligence",
         icon="🏢",
-        status="beta"
+        status="gamma"
     )
     
     st.info("ℹ️ **MVP Version** - Real-time Verification + Web Scraping + Risk Assessment")

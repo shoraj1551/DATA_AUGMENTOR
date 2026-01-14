@@ -183,13 +183,15 @@ RECOMMENDED ACTIONS:
         for line in text.split('\n'):
             line = line.strip()
             
-            if 'EXECUTIVE SUMMARY:' in line.upper():
+            line_upper = line.upper()
+            
+            if 'EXECUTIVE SUMMARY' in line_upper:
                 current_section = 'summary'
-            elif 'KEY INSIGHTS:' in line.upper() or 'INSIGHTS:' in line.upper():
+            elif 'KEY INSIGHTS' in line_upper or 'INSIGHTS' in line_upper and current_section != 'summary':
                 current_section = 'insights'
-            elif 'RISK ALERTS:' in line.upper() or 'RISKS:' in line.upper():
+            elif 'RISK ALERTS' in line_upper or 'RISKS' in line_upper:
                 current_section = 'risks'
-            elif 'RECOMMENDED ACTIONS:' in line.upper() or 'ACTIONS:' in line.upper():
+            elif 'RECOMMENDED ACTIONS' in line_upper or ('ACTIONS' in line_upper and 'RECOMMENDED' in line_upper):
                 current_section = 'actions'
             elif line.startswith('-') or line.startswith('•') or line[0:2].replace('.', '').isdigit():
                 item = line.lstrip('-•0123456789. ').strip()

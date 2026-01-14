@@ -84,6 +84,23 @@ def render():
                     )
                     audience = audience_sel.lower()
             
+            # Check for audience change if profile exists
+            if 'profile' in st.session_state and 'audience' in st.session_state:
+                current_audience_val = st.session_state.audience
+                if current_audience_val != audience:
+                    st.warning(f"⚠️ Audience changed to '{audience_sel}'. Update the narrative to match.")
+                    if st.button(f"🔄 Update Narrative for {audience_sel}", type="primary"):
+                         with st.spinner(f"Updating narrative for {audience_sel}..."):
+                             narrator = InsightNarrator()
+                             narrative = narrator.generate_narrative(
+                                 st.session_state.profile, 
+                                 st.session_state.anomalies, 
+                                 audience
+                             )
+                             st.session_state.narrative = narrative
+                             st.session_state.audience = audience
+                             st.rerun()
+
             # Profile button
             if st.button("🔍 Profile Dataset", type="primary", use_container_width=True):
                 with st.spinner("Profiling dataset..."):
@@ -101,6 +118,7 @@ def render():
                     st.session_state.profile = profile
                     st.session_state.anomalies = anomalies
                     st.session_state.df = df
+                    st.session_state.audience = audience
                     
                     # Generate insights if requested
                     if generate_insights:
@@ -114,7 +132,6 @@ def render():
                             narrator = InsightNarrator()
                             narrative = narrator.generate_narrative(profile, anomalies, audience)
                             st.session_state.narrative = narrative
-                            st.session_state.audience = audience
                 
                 st.success("✅ Profiling complete!")
                 st.rerun()

@@ -110,13 +110,15 @@ RECOMMENDATIONS:
         for line in text.split('\n'):
             line = line.strip()
             
-            if 'SUMMARY:' in line.upper():
+            line_upper = line.upper()
+            
+            if 'SUMMARY' in line_upper and (line_upper.startswith('SUMMARY') or line_upper.startswith('**SUMMARY') or line_upper.startswith('## SUMMARY')):
                 current_section = 'summary'
-            elif 'KEY FINDINGS:' in line.upper():
+            elif 'KEY FINDINGS' in line_upper and ('KEY FINDINGS' in line_upper):
                 current_section = 'key_findings'
-            elif 'DATA QUALITY ISSUES:' in line.upper() or 'QUALITY ISSUES:' in line.upper():
+            elif ('QUALITY ISSUES' in line_upper or 'DATA QUALITY' in line_upper) and 'ISSUES' in line_upper:
                 current_section = 'quality_issues'
-            elif 'RECOMMENDATIONS:' in line.upper():
+            elif 'RECOMMENDATIONS' in line_upper and ('RECOMMENDATIONS' in line_upper):
                 current_section = 'recommendations'
             elif line.startswith('-') or line.startswith('•'):
                 item = line.lstrip('-•').strip()

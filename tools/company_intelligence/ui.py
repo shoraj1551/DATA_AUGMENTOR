@@ -34,16 +34,16 @@ def render():
     
     st.info("ℹ️ **MVP Version** - Real-time Verification + Web Scraping + Risk Assessment")
     
-    # Tabs
-    tab1, tab2 = st.tabs(["🔍 Company Profile", "💬 Ask Questions"])
+    st.info("ℹ️ **Core Features Work Without LLM** - Verification, Scraping & Risk Assessment are LLM-free!")
+    st.caption("💬 Q&A feature requires LLM (optional - may be unavailable due to API quotas)")
     
-    # Tab 1: Company Profile
+    # Only show Q&A tab if user explicitly wants it
+    # Core features work independently
+    tab1 = st.tabs(["🔍 Company Profile"])[0]
+    
+    # Tab 1: Company Profile (LLM-FREE)
     with tab1:
         render_profile_generation()
-    
-    # Tab 2: Q&A
-    with tab2:
-        render_qa_section()
 
 def render_profile_generation():
     """Render the profile generation form and results"""
@@ -88,6 +88,14 @@ def render_profile_generation():
     # Display Profile if exists
     if 'company_profile' in st.session_state:
         display_structured_profile(st.session_state.company_profile)
+        
+        # Optional Q&A Section (LLM-dependent)
+        st.markdown("---")
+        st.markdown("### 💬 Ask Questions (Optional - Requires LLM)")
+        st.caption("⚠️ This feature uses LLM and may be unavailable due to API quotas. Core profile features above work independently.")
+        
+        with st.expander("🤖 Natural Language Q&A", expanded=False):
+            render_qa_section()
 
 def build_company_profile(name: str, country: str, website: str, industry: str) -> CompanyProfile:
     """Orchestrate the profile building process"""
@@ -224,23 +232,25 @@ def render_risk_badge(risk: RiskAssessment):
         st.error(f"Risk: {risk.risk_level}")
 
 def render_qa_section():
-    """Render Q&A section"""
-    if 'company_profile' not in st.session_state:
-        st.warning("⚠️ Generate a company profile first to ask questions.")
+    """Render Q&A section (LLM-dependent)"""
+    profile = st.session_state.get('company_profile')
+    if not profile:
+        st.warning("Generate a profile first to use Q&A")
         return
-
-    st.markdown("### 💬 Ask Questions")
-    st.info("Ask questions based on the verified data and scraped content.")
     
-    question = st.text_input("Your question", placeholder="What technologies do they use?")
+    question = st.text_input("Your question", placeholder="What technologies do they use?", key="qa_question")
     
     if question and st.button("🔍 Get Answer", type="primary"):
-        with st.spinner("Analyzing profile data..."):
-            answer = answer_company_question(st.session_state.company_profile, question)
-            st.session_state.qa_answer = answer
+        with st.spinner("Analyzing profile data with LLM..."):
+            try:
+                answer = answer_company_question(profile, question)
+                st.session_state.qa_answer = answer
+            except Exception as e:
+                st.error(f"LLM Error: {str(e)}")
+                st.info("💡 Core profile features above still work without LLM!")
     
     if 'qa_answer' in st.session_state:
-        st.markdown("### 💡 Answer")
+        st.markdown("**Answer:**")
         st.markdown(st.session_state.qa_answer)
 
 def answer_company_question(profile: CompanyProfile, question: str) -> str:

@@ -388,8 +388,11 @@ def display_executive_persona(profile, anomalies, insights, df, narrative):
                                 st.warning(f"⚠️ Confidence: Low - Answer may be uncertain")
                         
                         # Display answer
-                        st.markdown(f"**Answer:**")
-                        st.info(result.get('answer', 'No answer available'))
+                        answer_text = result.get('answer', 'No answer available')
+                        
+                        # Format answer as natural text with markdown
+                        st.markdown("**Answer:**")
+                        st.markdown(answer_text)
                         
                         # Display data if available
                         if 'data' in result and result['data'] is not None:

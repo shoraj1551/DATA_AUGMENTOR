@@ -17,6 +17,19 @@ from llm.code_review_llm import (
 )
 
 
+def show_side_by_side_comparison(original_code: str, modified_code: str, language: str, original_label: str = "Original", modified_label: str = "Modified"):
+    """Show side-by-side comparison of original and modified code"""
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown(f"#### {original_label}")
+        st.code(original_code, language=language)
+    
+    with col2:
+        st.markdown(f"#### {modified_label}")
+        st.code(modified_code, language=language)
+
+
 def show_diff(original_code: str, modified_code: str, language: str):
     """Show color-coded diff between original and modified code"""
     diff = list(difflib.unified_diff(
@@ -361,23 +374,48 @@ def render():
                 st.success("✅ Documentation added successfully!")
                 st.info("ℹ️ **Only comments were added** - No code logic was changed")
                 
-                # Show diff
-                st.markdown("#### 📊 Changes Preview (Color-coded)")
-                show_diff(st.session_state.original_code, st.session_state.documented_code, st.session_state.language)
-                
-                # Show full code
-                with st.expander("📄 View Complete Documented Code"):
-                    st.code(st.session_state.documented_code, language=st.session_state.language)
-                
-                # Download with original filename
-                st.warning("⚠️ **Please review the documentation before downloading!**")
-                st.download_button(
-                    "📥 Download Documented Code",
-                    st.session_state.documented_code,
-                    st.session_state.original_filename,
-                    help="⚠️ Validate the output before using in production",
-                    key="download_docs"
+                # Side-by-side comparison
+                st.markdown("#### 📊 Side-by-Side Comparison")
+                show_side_by_side_comparison(
+                    st.session_state.original_code, 
+                    st.session_state.documented_code, 
+                    st.session_state.language,
+                    "📄 Original Code",
+                    "📝 With Documentation"
                 )
+                
+                # Accept and Download workflow
+                st.markdown("---")
+                col_accept, col_download = st.columns(2)
+                
+                with col_accept:
+                    if st.button("✅ Accept Documentation", type="primary", key="accept_docs"):
+                        st.session_state.docs_accepted = True
+                        st.success("✅ Documentation accepted!")
+                        st.rerun()
+                
+                with col_download:
+                    if st.session_state.get('docs_accepted', False):
+                        st.download_button(
+                            "📥 Download Documented Code",
+                            st.session_state.documented_code,
+                            st.session_state.original_filename,
+                            help="Download the code with documentation",
+                            key="download_docs"
+                        )
+                    else:
+                        st.button("📥 Download (Accept First)", disabled=True, help="Please accept the documentation before downloading")
+                
+                # Button to use documented code for fixing
+                st.markdown("---")
+                if st.button("➡️ Use Documented Code for Fix Issues", help="Fix Issues will use the documented code instead of original", key="use_docs_for_fix"):
+                    st.session_state.use_documented_for_fix = True
+                    st.success("✅ Fix Issues will now use the documented code!")
+                    st.rerun()
+                
+                if st.session_state.get('use_documented_for_fix', False):
+                    st.info("ℹ️ **Fix Issues will use the documented code**")
+
 
             
             # Solution 2: Fix All Issues
@@ -386,12 +424,16 @@ def render():
             st.markdown("Auto-fix all identified issues and add error handling for failure scenarios.")
             
             # Determine which code to use as base
-            base_code = st.session_state.get('documented_code', st.session_state.original_code)
-            base_label = "documented code" if 'documented_code' in st.session_state else "original code"
+            if st.session_state.get('use_documented_for_fix', False) and 'documented_code' in st.session_state:
+                base_code = st.session_state.documented_code
+                base_label = "📝 documented code"
+            else:
+                base_code = st.session_state.original_code
+                base_label = "📄 original code"
             
             st.info(f"ℹ️ Will fix issues in the **{base_label}**")
             
-            if st.button("🔧 Fix All Issues", type="secondary"):
+            if st.button("🔧 Fix All Issues", type="secondary", key="fix_issues_btn"):
                 # Check if we have issues to fix
                 if not st.session_state.review_issues and not st.session_state.failure_scenarios:
                     st.warning("⚠️ No issues or failure scenarios found to fix. Run Code Review and Failure Scenarios first!")
@@ -408,27 +450,51 @@ def render():
                                 st.session_state.failure_scenarios
                             )
                             st.session_state.fixed_code = fixed_code
-                            
-                            st.success("✅ Code fixed successfully!")
-                            st.info(f"**Fixed:** {len(st.session_state.review_issues)} issues and {len(st.session_state.failure_scenarios)} failure scenarios")
-                            
-                            # Show diff
-                            st.markdown("#### 📊 Changes Preview (Color-coded)")
-                            show_diff(base_code, fixed_code, st.session_state.language)
-                            
-                            # Show full code
-                            with st.expander("📄 View Complete Fixed Code"):
-                                st.code(fixed_code, language=st.session_state.language)
-                            
-                            # Download with original filename
-                            st.error("🚨 **VALIDATE OUTPUT BEFORE DOWNLOAD!**")
-                            st.warning("⚠️ The AI may have:\n- Changed functionality\n- Introduced new bugs\n- Missed edge cases\n- Added unnecessary code")
-                            
-                            st.download_button(
-                                "📥 Download Fixed Code (Review First!)",
-                                fixed_code,
-                                st.session_state.original_filename,  # Keep original filename
-                                help="⚠️⚠️⚠️ CRITICAL: Validate thoroughly before using!"
-                            )
+                            st.rerun()
                         except Exception as e:
                             st.error(f"Error: {str(e)}")
+            
+            # Display fixed code if it exists
+            if 'fixed_code' in st.session_state:
+                st.success("✅ Code fixed successfully!")
+                st.info(f"**Fixed:** {len(st.session_state.review_issues)} issues and {len(st.session_state.failure_scenarios)} failure scenarios")
+                
+                # Determine comparison base
+                if st.session_state.get('use_documented_for_fix', False) and 'documented_code' in st.session_state:
+                    comparison_base = st.session_state.documented_code
+                    comparison_label = "📝 Documented Code"
+                else:
+                    comparison_base = st.session_state.original_code
+                    comparison_label = "📄 Original Code"
+                
+                # Side-by-side comparison
+                st.markdown("#### 📊 Side-by-Side Comparison")
+                show_side_by_side_comparison(
+                    comparison_base,
+                    st.session_state.fixed_code,
+                    st.session_state.language,
+                    comparison_label,
+                    "🔧 Fixed Code"
+                )
+                
+                # Accept and Download workflow
+                st.markdown("---")
+                col_accept, col_download = st.columns(2)
+                
+                with col_accept:
+                    if st.button("✅ Accept Fixed Code", type="primary", key="accept_fixed"):
+                        st.session_state.fixed_accepted = True
+                        st.success("✅ Fixed code accepted!")
+                        st.rerun()
+                
+                with col_download:
+                    if st.session_state.get('fixed_accepted', False):
+                        st.download_button(
+                            "📥 Download Fixed Code",
+                            st.session_state.fixed_code,
+                            st.session_state.original_filename,
+                            help="Download the fixed code",
+                            key="download_fixed"
+                        )
+                    else:
+                        st.button("📥 Download (Accept First)", disabled=True, help="Please accept the fixed code before downloading")

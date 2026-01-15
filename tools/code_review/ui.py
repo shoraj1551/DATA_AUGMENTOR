@@ -80,7 +80,7 @@ def render():
     
     with col1:
         # Download config button
-        if st.button("ðŸ“¥ Download Config for Selected Language"):
+        if st.button("📥 Download Config for Selected Language"):
             # Determine which config to load
             if selected_lang != "Auto-detect":
                 lang_key = languages[selected_lang]
@@ -98,7 +98,7 @@ def render():
                 with open(config_file, 'r') as f:
                     config_content = f.read()
                 st.download_button(
-                    label=f"ðŸ’¾ Save {lang_key}_config.json",
+                    label=f"💾 Save {lang_key}_config.json",
                     data=config_content,
                     file_name=f"code_review_config_{lang_key}.json",
                     mime="application/json",
@@ -109,7 +109,7 @@ def render():
                 with open('config/code_review_config.json', 'r') as f:
                     config_content = f.read()
                 st.download_button(
-                    label=f"ðŸ’¾ Save default_config.json",
+                    label=f"💾 Save default_config.json",
                     data=config_content,
                     file_name="code_review_config.json",
                     mime="application/json",
@@ -118,11 +118,11 @@ def render():
     
     with col2:
         # Upload custom config
-        uploaded_config = st.file_uploader("ðŸ“¤ Upload Custom Config (JSON)", type=['json'], key="config_upload")
+        uploaded_config = st.file_uploader("📤 Upload Custom Config (JSON)", type=['json'], key="config_upload")
         if uploaded_config:
             try:
                 custom_config = json.load(uploaded_config)
-                st.success(f"âœ… Custom config loaded: {uploaded_config.name}")
+                st.success(f"✅ Custom config loaded: {uploaded_config.name}")
                 with st.expander("View Config"):
                     st.json(custom_config)
             except Exception as e:

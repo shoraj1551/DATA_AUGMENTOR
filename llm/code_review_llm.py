@@ -228,3 +228,114 @@ Return ONLY valid JSON with the exact structure specified."""
     )
     
     return response.choices[0].message.content
+
+
+# ============================================
+# NEW FEATURES
+# ============================================
+
+@llm_cache.cached
+def add_comments_and_documentation(code: str, language: str) -> str:
+    """
+    Add inline comments and documentation to code.
+    Uses free LLM from config.
+    """
+    system_prompt = f"""You are an expert {language} developer and technical writer.
+
+Add comprehensive inline comments and documentation to the code.
+
+REQUIREMENTS:
+1. Add docstrings/documentation blocks for all functions/classes
+2. Add inline comments explaining complex logic
+3. Document parameters, return values, and exceptions
+4. Explain WHY, not just WHAT (focus on intent, not obvious statements)
+5. Follow {language} documentation conventions (e.g., PEP 257 for Python, JSDoc for JavaScript)
+6. Keep comments concise but informative
+
+OUTPUT FORMAT:
+Return ONLY the complete code with added comments and documentation.
+Do NOT include explanations or markdown - just the code."""
+
+    user_prompt = f"""Add comments and documentation to this {language} code:
+
+```{language}
+{code}
+```
+
+Return the complete code with comprehensive documentation."""
+
+    response = get_client().chat.completions.create(
+        model=get_model_for_feature("code_review"),
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+    )
+    
+    return response.choices[0].message.content
+
+
+@llm_cache.cached
+def fix_all_issues(code: str, language: str, issues: list, failure_scenarios: list) -> str:
+    """
+    Auto-fix all identified issues and handle failure scenarios.
+    Uses free LLM from config.
+    """
+    # Format issues and failures for the prompt
+    issues_text = "\n".join([
+        f"- Line {issue.get('line', 'N/A')}: {issue.get('message', '')} (Severity: {issue.get('severity', 'unknown')})"
+        for issue in issues
+    ])
+    
+    failures_text = "\n".join([
+        f"- {scenario.get('function', 'General')}: {scenario.get('reason', '')} (Input: {scenario.get('input', 'N/A')})"
+        for scenario in failure_scenarios
+    ])
+    
+    system_prompt = f"""You are an expert {language} developer.
+
+Fix ALL identified issues and add error handling for ALL failure scenarios.
+
+REQUIREMENTS:
+1. Fix every issue mentioned in the code review
+2. Add proper error handling for all failure scenarios
+3. Add input validation to prevent failures
+4. Add try-catch blocks where appropriate
+5. Add defensive programming checks (null checks, type checks, boundary checks)
+6. Maintain the original functionality
+7. Follow {language} best practices
+
+CRITICAL:
+- Fix ALL issues, don't skip any
+- Handle ALL failure scenarios
+- Add comprehensive error handling
+- Keep the code readable and maintainable
+
+OUTPUT FORMAT:
+Return ONLY the complete fixed code.
+Do NOT include explanations or markdown - just the code."""
+
+    user_prompt = f"""Fix this {language} code by addressing ALL issues and failure scenarios:
+
+**ORIGINAL CODE:**
+```{language}
+{code}
+```
+
+**ISSUES TO FIX:**
+{issues_text if issues_text else "No issues identified"}
+
+**FAILURE SCENARIOS TO HANDLE:**
+{failures_text if failures_text else "No failure scenarios identified"}
+
+Return the complete fixed code with all issues resolved and all failure scenarios handled."""
+
+    response = get_client().chat.completions.create(
+        model=get_model_for_feature("code_review"),
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+    )
+    
+    return response.choices[0].message.content

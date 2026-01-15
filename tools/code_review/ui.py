@@ -9,7 +9,9 @@ from llm.code_review_llm import (
     review_code_with_llm,
     generate_unit_tests_with_llm,
     generate_functional_tests_with_llm,
-    generate_failure_scenarios_with_llm
+    generate_failure_scenarios_with_llm,
+    add_comments_and_documentation,
+    fix_all_issues
 )
 
 
@@ -127,7 +129,7 @@ def render():
         
         # Analysis options
         st.subheader("Analysis Options")
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         
         with col1:
             do_review = st.checkbox("Code Review", value=True)
@@ -137,10 +139,25 @@ def render():
             do_functional_tests = st.checkbox("Generate Functional Tests", value=False)
             do_failures = st.checkbox("Generate Failure Scenarios", value=True)
         
+        with col3:
+            do_add_docs = st.checkbox("📝 Add Comments & Documentation", value=False)
+            do_fix_issues = st.checkbox("🔧 Fix All Issues", value=False)
+        
         if st.button("🔍 Analyze Code"):
             structure = analyze_code_structure(code, language)
             
-            tabs = st.tabs(["📋 Code Review", "🧪 Unit Tests", "🔗 Functional Tests", "⚠️ Failure Scenarios"])
+            # Store results for fix_all_issues
+            review_issues = []
+            failure_scenarios_list = []
+            
+            tabs = st.tabs([
+                "📋 Code Review", 
+                "🧪 Unit Tests", 
+                "🔗 Functional Tests", 
+                "⚠️ Failure Scenarios",
+                "📝 Add Documentation",
+                "🔧 Fix All Issues"
+            ])
             
             # Code Review
             with tabs[0]:
@@ -161,6 +178,9 @@ def render():
                                     review = {}
 
                                 issues = review.get('issues', [])
+                                # Store for fix_all_issues
+                                review_issues = issues if isinstance(issues, list) else []
+                                
                                 if issues and isinstance(issues, list):
                                     for issue in issues:
                                         if isinstance(issue, dict):
@@ -261,7 +281,87 @@ def render():
                                 st.write(f"**Reason:** {scenario.get('reason')}")
                                 st.write(f"**Expected:** {scenario.get('expected')}")
                                 st.divider()
+                            
+                            # Store for fix_all_issues
+                            failure_scenarios_list = failures.get('scenarios', [])
                         except Exception as e:
                             st.error(f"Error: {str(e)}")
                 else:
                     st.info("Failure scenario generation not requested")
+            
+            # Add Documentation
+            with tabs[4]:
+                if do_add_docs:
+                    st.warning("⚠️ **IMPORTANT:** Always validate the generated documentation before using it in production!")
+                    with st.spinner("Adding comments and documentation..."):
+                        try:
+                            documented_code = add_comments_and_documentation(code, language)
+                            
+                            st.success("✅ Documentation added successfully!")
+                            st.code(documented_code, language=language)
+                            
+                            # Download button with warning
+                            st.warning("🔍 **Please review the code carefully before downloading!**")
+                            st.download_button(
+                                "📥 Download Documented Code",
+                                documented_code,
+                                f"documented_{uploaded_file.name}",
+                                help="⚠️ Validate the output before using in production"
+                            )
+                        except Exception as e:
+                            st.error(f"Error: {str(e)}")
+                else:
+                    st.info("📝 Add Comments & Documentation not requested")
+                    st.markdown("""
+                    **This feature will:**
+                    - Add comprehensive docstrings/documentation blocks
+                    - Add inline comments explaining complex logic
+                    - Document parameters, return values, and exceptions
+                    - Follow language-specific documentation conventions
+                    """)
+            
+            # Fix All Issues
+            with tabs[5]:
+                if do_fix_issues:
+                    # Check if we have issues or failures to fix
+                    if not review_issues and not failure_scenarios_list:
+                        st.warning("⚠️ No issues or failure scenarios found to fix. Run Code Review and Failure Scenarios first!")
+                    else:
+                        st.error("⚠️ **CRITICAL WARNING:** AI-generated fixes may introduce new bugs or change functionality!")
+                        st.warning("🔍 **You MUST:**\n- Review every change carefully\n- Test the fixed code thoroughly\n- Validate it doesn't break existing functionality\n- Check for security issues")
+                        
+                        with st.spinner("Fixing all issues and handling failure scenarios..."):
+                            try:
+                                fixed_code = fix_all_issues(code, language, review_issues, failure_scenarios_list)
+                                
+                                st.success("✅ Code fixed successfully!")
+                                
+                                # Show what was fixed
+                                st.info(f"**Fixed:** {len(review_issues)} issues and {len(failure_scenarios_list)} failure scenarios")
+                                
+                                st.code(fixed_code, language=language)
+                                
+                                # Download button with strong warning
+                                st.error("🚨 **VALIDATE OUTPUT BEFORE DOWNLOAD!**")
+                                st.warning("⚠️ The AI may have:\n- Changed functionality\n- Introduced new bugs\n- Missed edge cases\n- Added unnecessary code")
+                                
+                                st.download_button(
+                                    "📥 Download Fixed Code (Review First!)",
+                                    fixed_code,
+                                    f"fixed_{uploaded_file.name}",
+                                    help="⚠️⚠️⚠️ CRITICAL: Validate thoroughly before using!"
+                                )
+                            except Exception as e:
+                                st.error(f"Error: {str(e)}")
+                else:
+                    st.info("🔧 Fix All Issues not requested")
+                    st.markdown("""
+                    **This feature will:**
+                    - Fix all identified code review issues
+                    - Add error handling for all failure scenarios
+                    - Add input validation
+                    - Add defensive programming checks
+                    - Maintain original functionality
+                    
+                    ⚠️ **Note:** You must run Code Review and/or Failure Scenarios first to identify issues to fix.
+                    """)

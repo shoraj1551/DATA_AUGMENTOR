@@ -75,7 +75,7 @@ def generate_unit_tests_with_llm(code: str, language: str, test_framework: str) 
 
 Generate comprehensive UNIT tests using {test_framework}.
 
-CRITICAL ?? CRITICAL RULES - MUST FOLLOW:\n1. DO NOT change ANY code logic whatsoever\n2. DO NOT modify ANY function names, variable names, or identifiers\n3. DO NOT add, remove, or modify ANY code statements or expressions\n4. DO NOT change ANY imports, function signatures, or class definitions\n5. ONLY add comments and docstrings - nothing else\n6. The code must run EXACTLY the same before and after\n\nWHAT TO ADD (COMMENTS ONLY):
+CRITICAL REQUIREMENTS:
 1. ISOLATION: Mock ALL external dependencies (databases, APIs, file I/O, network calls)
 2. Test individual functions/methods in complete isolation
 3. Focus on testing the logic of ONE function at a time
@@ -237,39 +237,71 @@ Return ONLY valid JSON with the exact structure specified."""
 @llm_cache.cached
 def add_comments_and_documentation(code: str, language: str) -> str:
     """
-    Add inline comments and documentation to code.
+    Add inline comments and documentation to code WITHOUT changing code format or logic.
     Uses free LLM from config.
     """
     system_prompt = f"""You are an expert {language} developer and technical writer.
 
-Add comprehensive inline comments and documentation to the code.
+🚨🚨🚨 ABSOLUTE CRITICAL RULES - NEVER VIOLATE 🚨🚨🚨
 
-?? CRITICAL RULES - MUST FOLLOW:\n1. DO NOT change ANY code logic whatsoever\n2. DO NOT modify ANY function names, variable names, or identifiers\n3. DO NOT add, remove, or modify ANY code statements or expressions\n4. DO NOT change ANY imports, function signatures, or class definitions\n5. ONLY add comments and docstrings - nothing else\n6. The code must run EXACTLY the same before and after\n\nWHAT TO ADD (COMMENTS ONLY):
-1. Add docstrings/documentation blocks for all functions/classes
-2. Add inline comments explaining complex logic
-3. Document parameters, return values, and exceptions
-4. Explain WHY, not just WHAT (focus on intent, not obvious statements)
-5. Follow {language} documentation conventions (e.g., PEP 257 for Python, JSDoc for JavaScript)
-6. Keep comments concise but informative
+1. KEEP THE EXACT SAME FORMAT
+   - If input is Python → output MUST be Python
+   - If input is SQL → output MUST be SQL
+   - If input is JavaScript → output MUST be JavaScript
+   - NEVER convert to JSON or any other format
 
-OUTPUT FORMAT:
-Return ONLY the complete code with added comments and documentation.
-Do NOT include explanations or markdown - just the code."""
+2. ONLY ADD COMMENTS - NOTHING ELSE
+   - Do NOT change function names
+   - Do NOT change variable names
+   - Do NOT change logic
+   - Do NOT change imports
+   - Do NOT change structure
+   - ONLY add comment lines and docstrings
 
-    user_prompt = f"""Add comments and documentation to this {language} code:
+3. EXAMPLE OF CORRECT OUTPUT:
 
-```{language}
+INPUT (Python):
+def calculate(x, y):
+    result = x + y
+    return result
+
+CORRECT OUTPUT (Python with comments):
+def calculate(x, y):
+    \"\"\"Calculate sum of two numbers.\"\"\"
+    # Add the two input values
+    result = x + y
+    return result
+
+WRONG OUTPUT (DO NOT DO THIS):
+{{
+  "function": "calculate",
+  "parameters": ["x", "y"]
+}}
+
+4. WHAT TO ADD:
+   - Docstrings for functions/classes
+   - Inline comments explaining WHY (not what)
+   - Parameter descriptions
+   - Return value descriptions
+
+5. OUTPUT FORMAT:
+   - Return the SAME programming language as input
+   - Do NOT wrap in markdown code blocks
+   - Do NOT convert to JSON
+   - Just the code with comments added"""
+
+    user_prompt = f"""Add ONLY comments to this {language} code. Keep it as {language} code!
+
+INPUT CODE:
 {code}
-```
 
-Return the complete code with ONLY comments added. No logic changes allowed.
+INSTRUCTIONS:
+- Keep the EXACT SAME format ({language})
+- ONLY add comment lines
+- Do NOT convert to JSON or any other format
+- Return {language} code with comments added
 
-🚨 CRITICAL OUTPUT FORMAT:
-- Return the raw code directly
-- Do NOT wrap in markdown code blocks
-- Do NOT return JSON
-- Do NOT add explanations
-- Just the code with comments added"""
+OUTPUT (must be {language} code):"""
 
     response = get_client().chat.completions.create(
         model=get_model_for_feature("code_review"),
@@ -316,7 +348,7 @@ def fix_all_issues(code: str, language: str, issues: list, failure_scenarios: li
 
 Fix ALL identified issues and add error handling for ALL failure scenarios.
 
-?? CRITICAL RULES - MUST FOLLOW:\n1. DO NOT change ANY code logic whatsoever\n2. DO NOT modify ANY function names, variable names, or identifiers\n3. DO NOT add, remove, or modify ANY code statements or expressions\n4. DO NOT change ANY imports, function signatures, or class definitions\n5. ONLY add comments and docstrings - nothing else\n6. The code must run EXACTLY the same before and after\n\nWHAT TO ADD (COMMENTS ONLY):
+REQUIREMENTS:
 1. Fix every issue mentioned in the code review
 2. Add proper error handling for all failure scenarios
 3. Add input validation to prevent failures
@@ -359,4 +391,3 @@ Return the complete fixed code with all issues resolved and all failure scenario
     )
     
     return response.choices[0].message.content
-

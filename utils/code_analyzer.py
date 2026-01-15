@@ -69,7 +69,7 @@ def detect_language(filename: str) -> str:
 
 
 def parse_notebook(ipynb_content: str) -> str:
-    """Extract code from Jupyter notebook."""
+    """Extract code from Jupyter notebook (supports v3, v4, v5 formats)."""
     try:
         # Validate content is not empty
         if not ipynb_content or not ipynb_content.strip():
@@ -85,18 +85,42 @@ def parse_notebook(ipynb_content: str) -> str:
         if not isinstance(notebook, dict):
             raise ValueError("Notebook must be a JSON object")
         
-        if 'cells' not in notebook:
-            raise ValueError("Notebook is missing 'cells' field. This may not be a valid Jupyter notebook.")
+        # Check notebook format version
+        nbformat_version = notebook.get('nbformat', 0)
         
+        # Handle different notebook formats
         code_cells = []
         
-        for cell in notebook.get('cells', []):
-            if cell.get('cell_type') == 'code':
-                source = cell.get('source', [])
-                if isinstance(source, list):
-                    code_cells.append(''.join(source))
-                else:
-                    code_cells.append(source)
+        # v4+ format (current standard)
+        if 'cells' in notebook:
+            for cell in notebook.get('cells', []):
+                if cell.get('cell_type') == 'code':
+                    source = cell.get('source', [])
+                    if isinstance(source, list):
+                        code_cells.append(''.join(source))
+                    else:
+                        code_cells.append(source)
+        
+        # v3 format (older)
+        elif 'worksheets' in notebook:
+            for worksheet in notebook.get('worksheets', []):
+                for cell in worksheet.get('cells', []):
+                    if cell.get('cell_type') == 'code':
+                        source = cell.get('input', [])  # v3 uses 'input' instead of 'source'
+                        if isinstance(source, list):
+                            code_cells.append(''.join(source))
+                        else:
+                            code_cells.append(source)
+        
+        else:
+            # Unknown format - provide diagnostic info
+            available_keys = list(notebook.keys())
+            raise ValueError(
+                f"Unrecognized Jupyter notebook format.\n"
+                f"Notebook version: {nbformat_version}\n"
+                f"Available fields: {', '.join(available_keys)}\n"
+                f"Expected 'cells' (v4+) or 'worksheets' (v3) field."
+            )
         
         if not code_cells:
             raise ValueError("No code cells found in notebook. The notebook may be empty or contain only markdown cells.")

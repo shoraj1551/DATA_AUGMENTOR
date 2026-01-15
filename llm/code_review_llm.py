@@ -263,6 +263,15 @@ def add_comments_and_documentation(code: str, language: str) -> str:
 INPUT (Python):
 def calculate(x, y):
     result = x + y
+    # CRITICAL: Check if LLM returned JSON instead of code
+    result_stripped = result.strip()
+    if result_stripped.startswith('{') or result_stripped.startswith('['):
+        raise ValueError(
+            "? LLM returned JSON instead of code.\n\n"
+            "Free LLM models are not following instructions.\n"
+            "Please use the SKIP button to bypass documentation."
+        )
+    
     return result
 
 CORRECT OUTPUT (Python with comments):
@@ -270,6 +279,15 @@ def calculate(x, y):
     \"\"\"Calculate sum of two numbers.\"\"\"
     # Add the two input values
     result = x + y
+    # CRITICAL: Check if LLM returned JSON instead of code
+    result_stripped = result.strip()
+    if result_stripped.startswith('{') or result_stripped.startswith('['):
+        raise ValueError(
+            "? LLM returned JSON instead of code.\n\n"
+            "Free LLM models are not following instructions.\n"
+            "Please use the SKIP button to bypass documentation."
+        )
+    
     return result
 
 WRONG OUTPUT (DO NOT DO THIS):
@@ -323,6 +341,15 @@ OUTPUT (must be {language} code):"""
         if lines and lines[-1].strip() == "```":
             lines = lines[:-1]
         result = '\n'.join(lines)
+    
+    # CRITICAL: Check if LLM returned JSON instead of code
+    result_stripped = result.strip()
+    if result_stripped.startswith('{') or result_stripped.startswith('['):
+        raise ValueError(
+            "? LLM returned JSON instead of code.\n\n"
+            "Free LLM models are not following instructions.\n"
+            "Please use the SKIP button to bypass documentation."
+        )
     
     return result
 
@@ -391,3 +418,4 @@ Return the complete fixed code with all issues resolved and all failure scenario
     )
     
     return response.choices[0].message.content
+

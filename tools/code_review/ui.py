@@ -319,33 +319,66 @@ def render():
             # Solution 1: Add Documentation
             st.markdown("### 📝 Step 1: Add Comments & Documentation")
             st.markdown("Add comprehensive inline comments and documentation to make the code more maintainable.")
+            st.info("ℹ️ **This ONLY adds comments** - No code logic will be changed")
             
-            if st.button("📝 Add Documentation", type="secondary"):
+            # Buttons row
+            col1, col2, col3 = st.columns([2, 1, 1])
+            
+            with col1:
+                add_docs_btn = st.button("📝 Add Documentation", type="secondary", key="add_docs")
+            
+            with col2:
+                if 'documented_code' in st.session_state:
+                    undo_docs_btn = st.button("↩️ Undo", help="Revert to original code", key="undo_docs")
+                else:
+                    undo_docs_btn = False
+            
+            with col3:
+                if 'documented_code' in st.session_state:
+                    retry_docs_btn = st.button("🔄 Retry", help="Regenerate documentation", key="retry_docs")
+                else:
+                    retry_docs_btn = False
+            
+            # Handle button clicks
+            if add_docs_btn or retry_docs_btn:
                 with st.spinner("⏳ Adding documentation... Please wait"):
                     try:
                         documented_code = add_comments_and_documentation(st.session_state.original_code, st.session_state.language)
                         st.session_state.documented_code = documented_code
-                        
-                        st.success("✅ Documentation added successfully!")
-                        
-                        # Show diff
-                        st.markdown("#### 📊 Changes Preview (Color-coded)")
-                        show_diff(st.session_state.original_code, documented_code, st.session_state.language)
-                        
-                        # Show full code
-                        with st.expander("📄 View Complete Documented Code"):
-                            st.code(documented_code, language=st.session_state.language)
-                        
-                        # Download with original filename
-                        st.warning("⚠️ **Please review the documentation before downloading!**")
-                        st.download_button(
-                            "📥 Download Documented Code",
-                            documented_code,
-                            st.session_state.original_filename,  # Keep original filename
-                            help="⚠️ Validate the output before using in production"
-                        )
+                        st.rerun()  # Refresh to show the result
                     except Exception as e:
                         st.error(f"Error: {str(e)}")
+            
+            elif undo_docs_btn:
+                # Remove documented code
+                if 'documented_code' in st.session_state:
+                    del st.session_state.documented_code
+                st.success("✅ Reverted to original code")
+                st.rerun()
+            
+            # Display documented code if it exists
+            if 'documented_code' in st.session_state:
+                st.success("✅ Documentation added successfully!")
+                st.info("ℹ️ **Only comments were added** - No code logic was changed")
+                
+                # Show diff
+                st.markdown("#### 📊 Changes Preview (Color-coded)")
+                show_diff(st.session_state.original_code, st.session_state.documented_code, st.session_state.language)
+                
+                # Show full code
+                with st.expander("📄 View Complete Documented Code"):
+                    st.code(st.session_state.documented_code, language=st.session_state.language)
+                
+                # Download with original filename
+                st.warning("⚠️ **Please review the documentation before downloading!**")
+                st.download_button(
+                    "📥 Download Documented Code",
+                    st.session_state.documented_code,
+                    st.session_state.original_filename,
+                    help="⚠️ Validate the output before using in production",
+                    key="download_docs"
+                )
+
             
             # Solution 2: Fix All Issues
             st.markdown("---")

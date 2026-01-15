@@ -262,7 +262,14 @@ Do NOT include explanations or markdown - just the code."""
 {code}
 ```
 
-Return the complete code with ONLY comments added. No logic changes allowed."""
+Return the complete code with ONLY comments added. No logic changes allowed.
+
+🚨 CRITICAL OUTPUT FORMAT:
+- Return the raw code directly
+- Do NOT wrap in markdown code blocks
+- Do NOT return JSON
+- Do NOT add explanations
+- Just the code with comments added"""
 
     response = get_client().chat.completions.create(
         model=get_model_for_feature("code_review"),
@@ -272,7 +279,20 @@ Return the complete code with ONLY comments added. No logic changes allowed."""
         ]
     )
     
-    return response.choices[0].message.content
+    # Clean up response - remove markdown code blocks if present
+    result = response.choices[0].message.content
+    
+    # Remove markdown code blocks
+    if result.startswith("```"):
+        lines = result.split('\n')
+        # Remove first line (```language) and last line (```)
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        result = '\n'.join(lines)
+    
+    return result
 
 
 @llm_cache.cached

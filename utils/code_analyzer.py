@@ -71,7 +71,23 @@ def detect_language(filename: str) -> str:
 def parse_notebook(ipynb_content: str) -> str:
     """Extract code from Jupyter notebook."""
     try:
-        notebook = json.loads(ipynb_content)
+        # Validate content is not empty
+        if not ipynb_content or not ipynb_content.strip():
+            raise ValueError("Notebook content is empty")
+        
+        # Parse JSON
+        try:
+            notebook = json.loads(ipynb_content)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON format in notebook file. Error at position {e.pos}: {e.msg}")
+        
+        # Validate notebook structure
+        if not isinstance(notebook, dict):
+            raise ValueError("Notebook must be a JSON object")
+        
+        if 'cells' not in notebook:
+            raise ValueError("Notebook is missing 'cells' field. This may not be a valid Jupyter notebook.")
+        
         code_cells = []
         
         for cell in notebook.get('cells', []):
@@ -82,9 +98,15 @@ def parse_notebook(ipynb_content: str) -> str:
                 else:
                     code_cells.append(source)
         
+        if not code_cells:
+            raise ValueError("No code cells found in notebook. The notebook may be empty or contain only markdown cells.")
+        
         return '\n\n'.join(code_cells)
+    except ValueError as ve:
+        # Re-raise ValueError with clear message
+        raise ve
     except Exception as e:
-        raise ValueError(f"Error parsing Jupyter notebook: {str(e)}")
+        raise ValueError(f"Unexpected error parsing Jupyter notebook: {str(e)}")
 
 
 def extract_functions(code: str, language: str) -> List[str]:

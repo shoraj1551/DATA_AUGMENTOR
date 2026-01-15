@@ -102,11 +102,24 @@ def render():
         st.info(f"**Language:** {language.upper()}")
         
         # Read file
-        if uploaded_file.name.endswith('.ipynb'):
-            content = uploaded_file.read().decode('utf-8')
-            code = parse_notebook(content)
-        else:
-            code = uploaded_file.read().decode('utf-8')
+        try:
+            if uploaded_file.name.endswith('.ipynb'):
+                content = uploaded_file.read().decode('utf-8')
+                # Debug: Show first 100 chars
+                if not content.strip():
+                    st.error("❌ The uploaded .ipynb file appears to be empty!")
+                    st.stop()
+                code = parse_notebook(content)
+            else:
+                code = uploaded_file.read().decode('utf-8')
+        except ValueError as ve:
+            # Show specific parsing error
+            st.error(f"❌ **Error parsing notebook:** {str(ve)}")
+            st.info("💡 **Troubleshooting:**\n- Ensure the file is a valid Jupyter notebook (.ipynb)\n- Try opening it in Jupyter to verify it's not corrupted\n- Check that it contains at least one code cell")
+            st.stop()
+        except Exception as e:
+            st.error(f"❌ **Error reading file:** {str(e)}")
+            st.stop()
         
         # Show code preview
         with st.expander("📄 Code Preview"):

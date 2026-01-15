@@ -272,68 +272,6 @@ def calculate(x, y):
             "Please use the SKIP button to bypass documentation."
         )
     
-    return result
-
-CORRECT OUTPUT (Python with comments):
-def calculate(x, y):
-    \"\"\"Calculate sum of two numbers.\"\"\"
-    # Add the two input values
-    result = x + y
-    # CRITICAL: Check if LLM returned JSON instead of code
-    result_stripped = result.strip()
-    if result_stripped.startswith('{') or result_stripped.startswith('['):
-        raise ValueError(
-            "? LLM returned JSON instead of code.\n\n"
-            "Free LLM models are not following instructions.\n"
-            "Please use the SKIP button to bypass documentation."
-        )
-    
-    return result
-
-WRONG OUTPUT (DO NOT DO THIS):
-{{
-  "function": "calculate",
-  "parameters": ["x", "y"]
-}}
-
-4. WHAT TO ADD:
-   - Docstrings for functions/classes
-   - Inline comments explaining WHY (not what)
-   - Parameter descriptions
-   - Return value descriptions
-
-5. OUTPUT FORMAT:
-   - Return the SAME programming language as input
-   - Do NOT wrap in markdown code blocks
-   - Do NOT convert to JSON
-   - Just the code with comments added"""
-
-    user_prompt = f"""Add ONLY comments to this {language} code. Keep it as {language} code!
-
-INPUT CODE:
-{code}
-
-INSTRUCTIONS:
-- Keep the EXACT SAME format ({language})
-- ONLY add comment lines
-- Do NOT convert to JSON or any other format
-- Return {language} code with comments added
-
-OUTPUT (must be {language} code):"""
-
-    response = get_client().chat.completions.create(
-        model=get_model_for_feature("code_review"),
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
-    )
-    
-    # Clean up response - remove markdown code blocks if present
-    result = response.choices[0].message.content
-    
-    # Remove markdown code blocks
-    if result.startswith("```"):
         lines = result.split('\n')
         # Remove first line (```language) and last line (```)
         if lines[0].startswith("```"):

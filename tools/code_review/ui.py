@@ -335,7 +335,7 @@ def render():
             st.info("ℹ️ **This ONLY adds comments** - No code logic will be changed")
             
             # Buttons row
-            col1, col2, col3 = st.columns([2, 1, 1])
+            col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
             
             with col1:
                 add_docs_btn = st.button("📝 Add Documentation", type="secondary", key="add_docs")
@@ -351,6 +351,11 @@ def render():
                     retry_docs_btn = st.button("🔄 Retry", help="Regenerate documentation", key="retry_docs")
                 else:
                     retry_docs_btn = False
+
+
+                    with col4:
+
+                        skip_docs_btn = st.button("?? Skip", help="Skip documentation, go to Fix Issues", key="skip_docs", type="primary")
             
             # Handle button clicks
             if add_docs_btn or retry_docs_btn:
@@ -362,7 +367,7 @@ def render():
                     except Exception as e:
                         st.error(f"Error: {str(e)}")
             
-            elif undo_docs_btn:
+            elif skip_docs_btn:`r`n                st.session_state.skip_documentation = True`r`n                st.info("? Skipped documentation - You can now go to Fix Issues")`r`n                st.rerun()`r`n            `r`n            elif undo_docs_btn:
                 # Remove documented code
                 if 'documented_code' in st.session_state:
                     del st.session_state.documented_code
@@ -498,3 +503,4 @@ def render():
                         )
                     else:
                         st.button("📥 Download (Accept First)", disabled=True, help="Please accept the fixed code before downloading")
+

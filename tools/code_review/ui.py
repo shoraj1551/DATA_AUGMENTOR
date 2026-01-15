@@ -73,7 +73,7 @@ def render():
     
     # Config download/upload section
     st.markdown("---")
-    st.subheader("ðŸ“‹ Code Review Configuration (Optional)")
+    st.subheader("📋 Code Review Configuration (Optional)")
     st.info("**Python, PySpark, SQL, Spark SQL** have detailed configs. Other languages use generic config.")
     
     col1, col2 = st.columns(2)

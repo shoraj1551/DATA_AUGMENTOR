@@ -75,7 +75,7 @@ def generate_unit_tests_with_llm(code: str, language: str, test_framework: str) 
 
 Generate comprehensive UNIT tests using {test_framework}.
 
-CRITICAL REQUIREMENTS:
+CRITICAL ?? CRITICAL RULES - MUST FOLLOW:\n1. DO NOT change ANY code logic whatsoever\n2. DO NOT modify ANY function names, variable names, or identifiers\n3. DO NOT add, remove, or modify ANY code statements or expressions\n4. DO NOT change ANY imports, function signatures, or class definitions\n5. ONLY add comments and docstrings - nothing else\n6. The code must run EXACTLY the same before and after\n\nWHAT TO ADD (COMMENTS ONLY):
 1. ISOLATION: Mock ALL external dependencies (databases, APIs, file I/O, network calls)
 2. Test individual functions/methods in complete isolation
 3. Focus on testing the logic of ONE function at a time
@@ -244,7 +244,7 @@ def add_comments_and_documentation(code: str, language: str) -> str:
 
 Add comprehensive inline comments and documentation to the code.
 
-REQUIREMENTS:
+?? CRITICAL RULES - MUST FOLLOW:\n1. DO NOT change ANY code logic whatsoever\n2. DO NOT modify ANY function names, variable names, or identifiers\n3. DO NOT add, remove, or modify ANY code statements or expressions\n4. DO NOT change ANY imports, function signatures, or class definitions\n5. ONLY add comments and docstrings - nothing else\n6. The code must run EXACTLY the same before and after\n\nWHAT TO ADD (COMMENTS ONLY):
 1. Add docstrings/documentation blocks for all functions/classes
 2. Add inline comments explaining complex logic
 3. Document parameters, return values, and exceptions
@@ -262,7 +262,7 @@ Do NOT include explanations or markdown - just the code."""
 {code}
 ```
 
-Return the complete code with comprehensive documentation."""
+Return the complete code with ONLY comments added. No logic changes allowed."""
 
     response = get_client().chat.completions.create(
         model=get_model_for_feature("code_review"),
@@ -296,7 +296,7 @@ def fix_all_issues(code: str, language: str, issues: list, failure_scenarios: li
 
 Fix ALL identified issues and add error handling for ALL failure scenarios.
 
-REQUIREMENTS:
+?? CRITICAL RULES - MUST FOLLOW:\n1. DO NOT change ANY code logic whatsoever\n2. DO NOT modify ANY function names, variable names, or identifiers\n3. DO NOT add, remove, or modify ANY code statements or expressions\n4. DO NOT change ANY imports, function signatures, or class definitions\n5. ONLY add comments and docstrings - nothing else\n6. The code must run EXACTLY the same before and after\n\nWHAT TO ADD (COMMENTS ONLY):
 1. Fix every issue mentioned in the code review
 2. Add proper error handling for all failure scenarios
 3. Add input validation to prevent failures
@@ -339,3 +339,4 @@ Return the complete fixed code with all issues resolved and all failure scenario
     )
     
     return response.choices[0].message.content
+

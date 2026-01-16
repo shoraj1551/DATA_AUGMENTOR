@@ -57,9 +57,12 @@ class PlansDB:
         
         elif HAS_MSVCRT:
             # Windows
+            # Save current position to ensure we unlock the same region
+            current_pos = file_handle.tell()
             start_time = time.time()
             while True:
                 try:
+                    file_handle.seek(current_pos)
                     msvcrt.locking(file_handle.fileno(), msvcrt.LK_NBLCK, 1)
                     break
                 except IOError:
@@ -69,6 +72,8 @@ class PlansDB:
             try:
                 yield
             finally:
+                # Must seek back to the locked position to unlock correctly
+                file_handle.seek(current_pos)
                 msvcrt.locking(file_handle.fileno(), msvcrt.LK_UNLCK, 1)
         else:
             # No locking available - just yield (fallback for unsupported platforms)
@@ -254,6 +259,7 @@ class PlansDB:
                 if found: break
             if found: break
             
+            
         if found:
             # Add audit entry
             self._add_audit_entry(plan, "task_updated", user, {
@@ -266,3 +272,17 @@ class PlansDB:
             self.save_plan(plan, user)
             return True
         return False
+
+    def update_sticky_notes(self, plan_id: str, notes: list, user: str = "system") -> bool:
+        """
+        Update the entire list of sticky notes for a plan.
+        """
+        plan = self.get_plan(plan_id)
+        if not plan:
+            return False
+            
+        plan["sticky_notes"] = notes
+        # We generally don't audit every sticky move/edit to avoid spam, or we can:
+        # self._add_audit_entry(plan, "notes_updated", user)
+        self.save_plan(plan, user)
+        return True

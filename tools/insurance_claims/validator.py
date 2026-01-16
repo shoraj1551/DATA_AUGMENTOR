@@ -2,6 +2,9 @@
 Claims Validator - Validate claims against policy rules
 """
 from common.llm.client import get_client
+import json
+from config.settings import get_model_for_feature
+from utils.safe_llm_parser import SafeLLMParser
 
 
 class ClaimsValidator:
@@ -26,11 +29,11 @@ class ClaimsValidator:
         
         try:
             response = self.client.chat.completions.create(
-                model="google/gemini-2.0-flash-exp:free",
+                model=get_model_for_feature("insurance_claims"),
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an insurance claims specialist. Validate claims thoroughly and provide clear guidance."
+                        "content": "You are an insurance claims specialist. Validate claims thoroughly and provide clear guidance. Return strictly JSON."
                     },
                     {
                         "role": "user",
@@ -41,7 +44,15 @@ class ClaimsValidator:
             )
             
             validation_text = response.choices[0].message.content
-            return self._parse_validation(validation_text)
+            # Use SafeLLMParser for robust JSON extraction
+            return SafeLLMParser.parse_json(validation_text, default={
+                'eligibility_status': 'NEEDS REVIEW',
+                'validation_results': [],
+                'issues': [],
+                'discrepancies': [],
+                'next_steps': [],
+                'approval_probability': 'Unknown'
+            })
             
         except Exception as e:
             return {
@@ -51,6 +62,69 @@ class ClaimsValidator:
                 'next_steps': []
             }
     
+
+    def generate_claim_checklist(self, topic: str, policy_analysis: dict) -> dict:
+        """
+        Generate a checklist of requirements and steps for a specific claim topic.
+        
+        Args:
+            topic: User's claim topic (e.g. "Knee Surgery", "Lost Luggage")
+            policy_analysis: Analyzed policy rules
+            
+        Returns:
+            dict: { 'required_documents': [], 'steps': [], 'critical_warnings': [] }
+        """
+        # Create a focused prompt
+        prompt = f"""
+        User wants to file a claim for: "{topic}"
+        
+        Based ONLY on the policy details below, provide a practical checklist.
+        
+        POLICY RULES:
+        {json.dumps(policy_analysis.get('coverage_rules', []), indent=2)}
+        
+        EXCLUSIONS:
+        {json.dumps(policy_analysis.get('exclusions', []), indent=2)}
+        
+        REQUIREMENTS:
+        {json.dumps(policy_analysis.get('claim_requirements', []), indent=2)}
+        
+        Return JSON with:
+        - required_documents (list of strings): Specific docs needed (e.g. "Itemized bill", "Police report").
+        - steps (list of strings): Step-by-step generic process based on policy type.
+        - critical_warnings (list of strings): Any exclusions or deadlines relevant to THIS specific topic.
+        """
+        
+        try:
+            response = self.client.chat.completions.create(
+                model=get_model_for_feature("insurance_claims"),
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an insurance guide. valid claims. Return strictly JSON."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=0.2
+            )
+            
+            result_text = response.choices[0].message.content
+            return SafeLLMParser.parse_json(result_text, default={
+                'required_documents': ["Policy Document", "ID Proof"],
+                'steps': ["Contact Insurer"],
+                'critical_warnings': []
+            })
+            
+        except Exception as e:
+            return {
+                'error': str(e),
+                'required_documents': [],
+                'steps': []
+            }
+
     def _build_validation_prompt(self, claim_details: dict, policy_analysis: dict) -> str:
         """Build validation prompt"""
         import json
@@ -70,10 +144,13 @@ POLICY EXCLUSIONS:
 CLAIM REQUIREMENTS:
 {json.dumps(policy_analysis.get('claim_requirements', []), indent=2)}
 
-Please provide:
-
-ELIGIBILITY STATUS:
-[APPROVED / DENIED / NEEDS REVIEW]
+Please provide a structured validation in JSON format with the following keys:
+- eligibility_status (string: APPROVED, DENIED, or NEEDS REVIEW)
+- validation_results (list of strings)
+- issues (list of strings)
+- discrepancies (list of strings)
+- next_steps (list of strings)
+- approval_probability (string)
 
 VALIDATION RESULTS:
 - [Check 1: Coverage verification]
@@ -95,51 +172,3 @@ NEXT STEPS FOR USER:
 ESTIMATED APPROVAL PROBABILITY:
 [High / Medium / Low] - [Reason]
 """
-    
-    def _parse_validation(self, text: str) -> dict:
-        """Parse validation response"""
-        validation = {
-            'eligibility_status': 'NEEDS REVIEW',
-            'validation_results': [],
-            'issues': [],
-            'discrepancies': [],
-            'next_steps': [],
-            'approval_probability': 'Unknown'
-        }
-        
-        current_section = None
-        
-        for line in text.split('\n'):
-            line = line.strip()
-            
-            if 'ELIGIBILITY STATUS:' in line.upper():
-                current_section = 'status'
-                # Extract status from same line or next
-                if any(status in line.upper() for status in ['APPROVED', 'DENIED', 'NEEDS REVIEW']):
-                    for status in ['APPROVED', 'DENIED', 'NEEDS REVIEW']:
-                        if status in line.upper():
-                            validation['eligibility_status'] = status
-                            break
-            elif 'VALIDATION RESULTS:' in line.upper():
-                current_section = 'results'
-            elif 'IDENTIFIED ISSUES:' in line.upper() or 'ISSUES:' in line.upper():
-                current_section = 'issues'
-            elif 'DISCREPANCIES:' in line.upper():
-                current_section = 'discrepancies'
-            elif 'NEXT STEPS' in line.upper():
-                current_section = 'next_steps'
-            elif 'APPROVAL PROBABILITY:' in line.upper() or 'ESTIMATED' in line.upper():
-                current_section = 'probability'
-                validation['approval_probability'] = line.split(':', 1)[-1].strip() if ':' in line else 'Unknown'
-            elif line.startswith('-') or line.startswith('•') or line[0:2].replace('.', '').isdigit():
-                item = line.lstrip('-•0123456789. ').strip()
-                if current_section == 'results':
-                    validation['validation_results'].append(item)
-                elif current_section == 'issues':
-                    validation['issues'].append(item)
-                elif current_section == 'discrepancies':
-                    validation['discrepancies'].append(item)
-                elif current_section == 'next_steps':
-                    validation['next_steps'].append(item)
-        
-        return validation

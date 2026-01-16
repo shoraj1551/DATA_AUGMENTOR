@@ -208,3 +208,58 @@ def analyze_code_structure(code: str, language: str) -> Dict[str, Any]:
         'function_count': len(functions),
         'test_framework': get_test_framework(language)
     }
+
+
+def validate_code_syntax(code: str, language: str) -> bool:
+    """
+    Validate syntax of the code for supported languages.
+    Returns True if syntax is valid or if language is not supported for validation.
+    Returns False if syntax error is found.
+    """
+    if language == 'python':
+        import ast
+        try:
+            ast.parse(code)
+            return True
+        except SyntaxError:
+            return False
+            
+    elif language in ['javascript', 'typescript', 'java', 'cpp', 'c', 'csharp', 'go', 'rust', 'php', 'scala', 'kotlin', 'swift']:
+        # For compiled/other languages where we don't have a runtime parser,
+        # we perform heuristic validation for common structural errors.
+        
+        # 1. Check for matching braces/parentheses/brackets
+        # This is the most common error in LLM-generated code
+        stack = []
+        pairs = {')': '(', '}': '{', ']': '['}
+        
+        # Ignore brackets in strings/comments is hard with regex alone, so this is a "Simple" check.
+        # It's better than nothing but can produce false positives if code has unbalanced braces in strings.
+        # We'll use a slightly safer simple stack approach that ignores nothing for now (safe bet for code review)
+        # or we accept that a string like " { " might break it. 
+        # Let's try to be basic: strictly unmatched structural braces are usually bad.
+        
+        for char in code:
+            if char in '({[':
+                stack.append(char)
+            elif char in ')}]':
+                if not stack or stack[-1] != pairs[char]:
+                    return False # Error: Unmatched closing brace or wrong type
+                stack.pop()
+        
+        if stack:
+            return False # Error: Unclosed opening brace
+            
+        return True
+
+    # For JSON
+    elif language == 'json':
+        try:
+            json.loads(code)
+            return True
+        except json.JSONDecodeError:
+            return False
+            
+    # Default for others
+    return True
+

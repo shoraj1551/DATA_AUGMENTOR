@@ -144,9 +144,26 @@ FREE_MODELS_BY_USE_CASE = {
         ],
     },
 
+    
+    # ================================
+    # 5️⃣ Insurance Claims Review
+    # ================================
+    "insurance_claims": {
+        "default": "google/gemini-2.0-flash-exp:free",
+        "alternatives": [
+            "google/gemini-2.0-flash-thinking-exp:free",
+            "meta-llama/llama-3.2-90b-vision-instruct:free"
+        ],
+        "why": [
+            "Strong reasoning capabilities for policy interpretation",
+            "Good at structured JSON extraction",
+            "Fast enough for real-time validation"
+        ]
+    },
+
 
     # ================================
-    # 5️⃣ Web Data Scraper
+    # 6️⃣ Web Data Scraper
     # ================================
     "web_scraper": {
         "default": "google/gemini-2.0-flash-exp:free",
@@ -261,15 +278,38 @@ FREE_MODELS_BY_USE_CASE = {
     }
 }
 
+def get_model_for_language(language: str) -> str:
+    """
+    Select the best free model based on language complexity.
+    # Centralized logic moved from llm/code_review_llm.py.
+    """
+    # 1. Check if we have a specific override for this language in our config
+    # This allows us to add "rust": "specific-model" later without code changes
+    # For now, we map broad categories
+    
+    # Complex/Compiled languages that need stronger reasoning
+    complex_languages = {
+        'cpp', 'c++', 'c', 'java', 'rust', 'go', 'typescript', 
+        'javascript', 'js', 'ts', 'scala', 'kotlin', 'swift', 'php', 'c#'
+    }
+    
+    # 2. Get available models from our "code_review" config
+    # We use the "alternatives" list as the pool of "stronger" models
+    review_config = FREE_MODELS_BY_USE_CASE.get("code_review", {})
+    default_model = review_config.get("default", "meta-llama/llama-3.1-8b-instruct")
+    alternatives = review_config.get("alternatives", [])
+    
+    # 3. Select model based on complexity
+    if language.lower() in complex_languages and alternatives:
+        # Prefer the first alternative (usually Qwen or Mistral) for complex languages
+        return alternatives[0]
+        
+    return default_model
+
+
 def get_model_for_feature(feature_name: str) -> str:
     """
-    Get the default model ID for a specific feature.
-    
-    Args:
-        feature_name: Feature name (e.g., 'data_augmentor', 'code_review', etc.)
-        
-    Returns:
-        str: Model ID string (e.g. 'meta-llama/llama-3.1-8b-instruct')
+    Get the recommended model ID for a specific feature.
     """
     feature_config = FREE_MODELS_BY_USE_CASE.get(feature_name)
     if not feature_config:

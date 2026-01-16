@@ -13,21 +13,83 @@ from llm.code_review_llm import (
     generate_functional_tests_with_llm,
     generate_failure_scenarios_with_llm,
     add_comments_and_documentation,
+    add_comments_and_documentation,
     fix_all_issues
 )
+from utils.code_analyzer import validate_code_syntax
+from utils.safe_llm_parser import SafeLLMParser
+from tools.code_review.state_manager import CodeReviewStateManager
+import traceback
+
+def show_error_with_details(error: Exception, context: str = "Error"):
+    """Show error with expandable technical details"""
+    st.error(f"❌ **{context}:** {str(error)}")
+    with st.expander("🛠️ Technical Details (For Debugging)"):
+        st.code(traceback.format_exc(), language="python")
 
 
 def show_side_by_side_comparison(original_code: str, modified_code: str, language: str, original_label: str = "Original", modified_label: str = "Modified"):
-    """Show side-by-side comparison of original and modified code"""
-    col1, col2 = st.columns(2)
+    """Show side-by-side comparison of original and modified code with visual highlighting"""
     
-    with col1:
-        st.markdown(f"#### {original_label}")
-        st.code(original_code, language=language)
+    # Check if we should use HTML diff for better highlighting
+    # Logic: diff changed lines, keep context
     
-    with col2:
-        st.markdown(f"#### {modified_label}")
-        st.code(modified_code, language=language)
+    # 1. Split lines
+    orig_lines = original_code.splitlines()
+    mod_lines = modified_code.splitlines()
+    
+    # 2. Use difflib to find changes
+    d = difflib.Differ()
+    diff = list(d.compare(orig_lines, mod_lines))
+    
+    # Build HTML for side by side
+    html = """
+    <style>
+        .diff-container { display: flex; width: 100%; font-family: monospace; font-size: 12px; border: 1px solid #ccc; border-radius: 5px; overflow: hidden; }
+        .diff-col { width: 50%; overflow-x: auto; padding: 0; background: #fff; }
+        .diff-line { display: flex; min-height: 20px; line-height: 1.5; white-space: pre; }
+        .diff-num { width: 30px; text-align: right; padding-right: 5px; color: #999; user-select: none; background: #f0f0f0; border-right: 1px solid #ddd; }
+        .diff-content { flex: 1; padding-left: 5px; }
+        .diff-added { background-color: #e6ffec; } /* Light Green */
+        .diff-removed { background-color: #ffebe9; } /* Light Red */
+        .diff-empty { background-color: #f8f9fa; }
+        .diff-header { background: #f1f8ff; padding: 8px; font-weight: bold; border-bottom: 1px solid #ddd; text-align: center; }
+    </style>
+    <div class="diff-container">
+        <div class="diff-col">
+            <div class="diff-header">""" + original_label + """</div>
+    """
+    
+    left_html = ""
+    right_html = ""
+    
+    # Process diff
+    left_line_num = 1
+    right_line_num = 1
+    
+    for line in diff:
+        marker = line[0]
+        content = line[2:]
+        safe_content = content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        
+        if marker == ' ':  # No change
+            left_html += f'<div class="diff-line"><span class="diff-num">{left_line_num}</span><span class="diff-content">{safe_content}</span></div>'
+            right_html += f'<div class="diff-line"><span class="diff-num">{right_line_num}</span><span class="diff-content">{safe_content}</span></div>'
+            left_line_num += 1
+            right_line_num += 1
+        elif marker == '-':  # Removed
+            left_html += f'<div class="diff-line diff-removed"><span class="diff-num">{left_line_num}</span><span class="diff-content">{safe_content}</span></div>'
+            right_html += f'<div class="diff-line diff-empty"><span class="diff-num"></span><span class="diff-content"></span></div>'
+            left_line_num += 1
+        elif marker == '+':  # Added
+            left_html += f'<div class="diff-line diff-empty"><span class="diff-num"></span><span class="diff-content"></span></div>'
+            right_html += f'<div class="diff-line diff-added"><span class="diff-num">{right_line_num}</span><span class="diff-content">{safe_content}</span></div>'
+            right_line_num += 1
+            
+    html += left_html + '</div><div class="diff-col"><div class="diff-header">' + modified_label + '</div>' + right_html + '</div></div>'
+    
+    st.markdown(html, unsafe_allow_html=True)
+
 
 
 def show_diff(original_code: str, modified_code: str, language: str):
@@ -58,9 +120,12 @@ def show_diff(original_code: str, modified_code: str, language: str):
 
 def render():
     """Render the Code Review page"""
+    # Initialize State Manager
+    CodeReviewStateManager.initialize()
+    
     back_to_home("CodeReview")
-    st.markdown('<h2 class="main-header">Code Review & Testing</h2>', unsafe_allow_html=True)
-    st.markdown('<p class="subtitle">AI-powered code quality assurance</p>', unsafe_allow_html=True)
+    st.markdown('<h2 class="main-header">Code Review & Testing <span style="font-size: 0.6em; vertical-align: middle; background-color: #FF4B4B; color: white; padding: 2px 8px; border-radius: 4px;">BETA</span></h2>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">AI-powered code quality assurance (Experimental)</p>', unsafe_allow_html=True)
     
     # Language selection
     languages = {
@@ -133,7 +198,8 @@ def render():
     
     # File upload
     uploaded_file = st.file_uploader("Upload code file:", 
-                                     type=['py', 'ipynb', 'js', 'ts', 'java', 'sql', 'go', 'rs', 'cpp', 'rb', 'php'])
+                                     type=['py', 'ipynb', 'js', 'ts', 'java', 'sql', 'go', 'rs', 'cpp', 'rb', 'php'],
+                                     key="code_uploader")
     
     if uploaded_file:
         # Detect or use selected language
@@ -144,7 +210,18 @@ def render():
         
         st.info(f"**Language:** {language.upper()}")
         
-        # Read file
+        # Reset state if new file is loaded (check if file changed)
+        # We use name + size to be robust
+        file_id = f"{uploaded_file.name}_{uploaded_file.size}"
+        current_file_id = st.session_state.get('last_file_id', '')
+        
+        if file_id != current_file_id:
+            # Use State Manager to safely reset and switch files
+            CodeReviewStateManager.set_new_file(uploaded_file.name, "", language) # Code set later
+            st.session_state.last_file_id = file_id
+            st.rerun()
+
+
         try:
             if uploaded_file.name.endswith('.ipynb'):
                 content = uploaded_file.read().decode('utf-8')
@@ -188,11 +265,13 @@ def render():
                 structure = analyze_code_structure(code, language)
                 
                 # Store results
-                st.session_state.review_issues = []
+                # Update State via Manager logic (explicitly set fields)
+                st.session_state.review_report = ""
                 st.session_state.failure_scenarios = []
                 st.session_state.original_code = code
                 st.session_state.original_filename = uploaded_file.name
                 st.session_state.language = language
+                st.session_state.analysis_complete = False
                 
                 tabs = st.tabs([
                     "📋 Code Review", 
@@ -204,50 +283,19 @@ def render():
                 # Code Review
                 with tabs[0]:
                     if do_review:
-                        with st.spinner("⏳ Reviewing code..."):
+                        with st.spinner("⏳ Analyzing code for issues..."):
                             try:
-                                review_json = review_code_with_llm(code, language, uploaded_file.name)
+                                # Get Markdown Report
+                                review_report = review_code_with_llm(code, language, uploaded_file.name)
                                 
-                                if not review_json:
+                                if not review_report:
                                     st.error("Received empty response from LLM")
                                 else:
-                                    try:
-                                        review = json.loads(review_json)
-                                    except json.JSONDecodeError:
-                                        st.warning("LLM returned raw text instead of structured JSON")
-                                        st.write(review_json)
-                                        review = {}
-
-                                    issues = review.get('issues', [])
-                                    # Store for fix_all_issues
-                                    st.session_state.review_issues = issues if isinstance(issues, list) else []
+                                    st.session_state.review_report = review_report
+                                    st.markdown(review_report)
                                     
-                                    if issues and isinstance(issues, list):
-                                        for issue in issues:
-                                            if isinstance(issue, dict):
-                                                line = str(issue.get('line', 'N/A'))
-                                                message = str(issue.get('message', 'No description'))
-                                                suggestion = str(issue.get('suggestion', 'No suggestion'))
-                                                severity = str(issue.get('severity', 'low')).lower()
-                                                
-                                                display_text = f"**Line {line}**: {message}"
-                                                
-                                                if severity == 'high':
-                                                    st.error(display_text)
-                                                elif severity == 'medium':
-                                                    st.warning(display_text)
-                                                else:
-                                                    st.info(display_text)
-                                                    
-                                                st.markdown(f"💡 **Suggestion:** {suggestion}")
-                                                st.divider()
-                                            else:
-                                                st.warning(f"Unstructured issue: {str(issue)}")
-                                    else:
-                                        if review:
-                                            st.success("✅ No major issues found!")
                             except Exception as e:
-                                st.error(f"Error during analysis: {str(e)}")
+                                show_error_with_details(e, "Error during analysis")
                     else:
                         st.info("Code review not requested")
                 
@@ -264,7 +312,7 @@ def render():
                                 else:
                                     st.warning("No tests generated.")
                             except Exception as e:
-                                st.error(f"Error: {str(e)}")
+                                show_error_with_details(e, "Error generating unit tests")
                     else:
                         st.info("Unit test generation not requested")
                 
@@ -295,7 +343,7 @@ def render():
                                 else:
                                     st.warning("No functional tests generated.")
                             except Exception as e:
-                                st.error(f"Error: {str(e)}")
+                                show_error_with_details(e, "Error generating functional tests")
                     else:
                         st.info("Functional test generation not requested")
                 
@@ -305,7 +353,16 @@ def render():
                         with st.spinner("⏳ Generating failure scenarios..."):
                             try:
                                 failures_json = generate_failure_scenarios_with_llm(code, language)
-                                failures = json.loads(failures_json)
+                                if not failures_json:
+                                    raise ValueError("Empty response from LLM")
+                                
+                                try:
+                                    # Use safe parser (returns dict or raises error)
+                                    failures = SafeLLMParser.parse_json(failures_json, default={"scenarios": []})
+                                except Exception as e:
+                                    st.warning(f"⚠️ Partially failed to parse scenarios. Showing raw output below.")
+                                    st.write(failures_json[:200] + "...")
+                                    failures = {"scenarios": []}
                                 
                                 for scenario in failures.get('scenarios', []):
                                     st.warning(f"**Function:** {scenario.get('function', 'General')}")
@@ -317,17 +374,20 @@ def render():
                                 # Store for fix_all_issues
                                 st.session_state.failure_scenarios = failures.get('scenarios', [])
                             except Exception as e:
-                                st.error(f"Error: {str(e)}")
+                                show_error_with_details(e, "Error generating failure scenarios")
                     else:
                         st.info("Failure scenario generation not requested")
+                
+                # Mark analysis as complete via Manager
+                CodeReviewStateManager.mark_analysis_complete()
         
         # ============================================
         # SECTION 2: SOLUTIONS (Sequential)
         # ============================================
-        if 'original_code' in st.session_state:
+        if st.session_state.get('analysis_complete', False):
             st.markdown("---")
             st.markdown("## 💡 Solutions")
-            st.info("**These are sequential operations:** Documentation → Fix Issues. Each step uses the output from the previous step.")
+            st.info("ℹ️ **Workflow:** Documentation → Fix Issues. Results cascade separately.")
             
             # Solution 1: Add Documentation
             st.markdown("### 📝 Step 1: Add Comments & Documentation")
@@ -341,13 +401,13 @@ def render():
                 add_docs_btn = st.button("📝 Add Documentation", type="secondary", key="add_docs")
             
             with col2:
-                if 'documented_code' in st.session_state:
+                if st.session_state.get('documented_code'):
                     undo_docs_btn = st.button("↩️ Undo", help="Revert to original code", key="undo_docs")
                 else:
                     undo_docs_btn = False
             
             with col3:
-                if 'documented_code' in st.session_state:
+                if st.session_state.get('documented_code'):
                     retry_docs_btn = st.button("🔄 Retry", help="Regenerate documentation", key="retry_docs")
                 else:
                     retry_docs_btn = False
@@ -362,10 +422,25 @@ def render():
                 with st.spinner("⏳ Adding documentation... Please wait"):
                     try:
                         documented_code = add_comments_and_documentation(st.session_state.original_code, st.session_state.language)
-                        st.session_state.documented_code = documented_code
-                        st.rerun()  # Refresh to show the result
+                        
+                        if not documented_code or not documented_code.strip():
+                            st.error("❌ AI returned empty response. Please try again.")
+                        else:
+                            st.session_state.documented_code = documented_code
+                            st.rerun()  # Refresh to show the result
                     except Exception as e:
-                        st.error(f"Error: {str(e)}")
+                        show_error_with_details(e, "Error adding documentation")
+                        st.session_state.documented_code = None # Ensure clear on error
+                    except Exception as e:
+                        show_error_with_details(e, "Error adding documentation")
+                        
+                    # Validate syntax of generated code
+                    if st.session_state.get('documented_code'):
+                        if not validate_code_syntax(st.session_state.documented_code, st.session_state.language):
+                            st.warning("⚠️ **Warning:** The generated code seems to have syntax errors. Please check the diff carefully before accepting.")
+                        else:
+                            st.info("✅ Code syntax validated successfully.")
+
             
             elif skip_docs_btn:
                 st.session_state.skip_documentation = True
@@ -379,8 +454,8 @@ def render():
                 st.success("✅ Reverted to original code")
                 st.rerun()
             
-            # Display documented code if it exists
-            if 'documented_code' in st.session_state:
+            # Display documented code if it exists and is not None
+            if st.session_state.get('documented_code'):
                 st.success("✅ Documentation added successfully!")
                 st.info("ℹ️ **Only comments were added** - No code logic will be changed")
                 
@@ -443,9 +518,9 @@ def render():
             
             st.info(f"ℹ️ Will fix issues in the **{base_label}**")
             
-            if st.button("🔧 Fix All Issues", type="secondary", key="fix_issues_btn"):
+            if st.button("🔧 Fix All Issues", type="primary", key="fix_issues_btn"):
                 # Check if we have issues to fix
-                if not st.session_state.review_issues and not st.session_state.failure_scenarios:
+                if not st.session_state.get('review_report') and not st.session_state.failure_scenarios:
                     st.warning("⚠️ No issues or failure scenarios found to fix. Run Code Review and Failure Scenarios first!")
                 else:
                     st.error("⚠️ **CRITICAL WARNING:** AI-generated fixes may introduce new bugs or change functionality!")
@@ -453,21 +528,47 @@ def render():
                     
                     with st.spinner("⏳ Fixing all issues... Please wait"):
                         try:
-                            fixed_code = fix_all_issues(
+                            result = fix_all_issues(
                                 base_code, 
                                 st.session_state.language, 
-                                st.session_state.review_issues, 
+                                st.session_state.get('review_report', 'Fix general issues'), 
                                 st.session_state.failure_scenarios
                             )
-                            st.session_state.fixed_code = fixed_code
+                            
+                            # Handle structured response (dict) or legacy response (str)
+                            if not result:
+                                st.error("❌ AI returned empty response for fixes.")
+                            elif isinstance(result, dict):
+                                st.session_state.fixed_code = result.get('fixed_code', '')
+                                st.session_state.fix_details = result.get('changes', [])
+                            else:
+                                st.session_state.fixed_code = str(result)
+                                st.session_state.fix_details = []
+                                
+                            st.rerun()
                             st.rerun()
                         except Exception as e:
-                            st.error(f"Error: {str(e)}")
+                            show_error_with_details(e, "Error fixing issues")
+                            
+                        # Validate syntax of fixed code
+                        if 'fixed_code' in st.session_state:
+                             if not validate_code_syntax(st.session_state.fixed_code, st.session_state.language):
+                                st.warning("⚠️ **Warning:** The fixed code seems to have syntax errors. Please check carefully.")
+
             
-            # Display fixed code if it exists
-            if 'fixed_code' in st.session_state:
+            # Display fixed code if it exists and is not None
+            if st.session_state.get('fixed_code'):
                 st.success("✅ Code fixed successfully!")
-                st.info(f"**Fixed:** {len(st.session_state.review_issues)} issues and {len(st.session_state.failure_scenarios)} failure scenarios")
+                st.info(f"**Fixed:** Issues from report and {len(st.session_state.failure_scenarios)} failure scenarios")
+                
+                # Show Detailed Fix Log
+                if 'fix_details' in st.session_state and st.session_state.fix_details:
+                    with st.expander("🛠️ Detailed Fix Log (Click to view changes)", expanded=False):
+                        for change in st.session_state.fix_details:
+                            st.markdown(f"**Issue:** {change.get('issue_summary', 'Unknown')}")
+                            st.markdown(f"**Fix:** {change.get('fix_explanation', 'No explanation')}")
+                            st.caption(f"📍 Approx. Line: {change.get('line_number', 'N/A')}")
+                            st.divider()
                 
                 # Determine comparison base
                 if st.session_state.get('use_documented_for_fix', False) and 'documented_code' in st.session_state:
@@ -508,3 +609,14 @@ def render():
                         )
                     else:
                         st.button("📥 Download (Accept First)", disabled=True, help="Please accept the fixed code before downloading")
+
+    # Debug Helper (Safe to keep in prod as it is collapsed)
+    with st.expander("🛠️ Debug Information (Developer Only)", expanded=False):
+        st.write("Current Session State IDs:")
+        st.json({
+            "original_filename": st.session_state.get('original_filename'),
+            "has_doc_code": bool(st.session_state.get('documented_code')),
+            "has_fixed_code": bool(st.session_state.get('fixed_code')),
+            "analysis_complete": st.session_state.get('analysis_complete'),
+            "file_id": st.session_state.get('last_file_id')
+        })

@@ -3,6 +3,8 @@ Policy Analyzer - Extract rules and coverage from policy documents
 """
 from common.llm.client import get_client
 import json
+from config.settings import get_model_for_feature
+from utils.safe_llm_parser import SafeLLMParser
 
 
 class PolicyAnalyzer:
@@ -26,11 +28,11 @@ class PolicyAnalyzer:
         
         try:
             response = self.client.chat.completions.create(
-                model="google/gemini-2.0-flash-exp:free",
+                model=get_model_for_feature("insurance_claims"),
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an insurance policy expert. Extract and structure policy information clearly."
+                        "content": "You are an insurance policy expert. Extract and structure policy information clearly. Return strictly JSON."
                     },
                     {
                         "role": "user",
@@ -41,7 +43,15 @@ class PolicyAnalyzer:
             )
             
             analysis_text = response.choices[0].message.content
-            return self._parse_analysis(analysis_text)
+            # Use SafeLLMParser for robust JSON extraction
+            return SafeLLMParser.parse_json(analysis_text, default={
+                'coverage_rules': [],
+                'exclusions': [],
+                'loopholes': [],
+                'claim_requirements': [],
+                'contacts': {},
+                'important_dates': {}
+            })
             
         except Exception as e:
             return {
@@ -51,6 +61,53 @@ class PolicyAnalyzer:
                 'contacts': {}
             }
     
+
+    def is_insurance_policy(self, text: str) -> dict:
+        """
+        Check if the text is an insurance policy document.
+        
+        Args:
+            text: Document text
+            
+        Returns:
+            dict: {'is_policy': bool, 'reason': str}
+        """
+        # Truncate for quick check
+        sample_text = text[:4000]
+        
+        try:
+            response = self.client.chat.completions.create(
+                model=get_model_for_feature("insurance_claims"),
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a document classifier. Determine if the provided text is an insurance policy document. Return strictly JSON."
+                    },
+                    {
+                        "role": "user",
+                        "content": f"""
+                        Classify this text. Is it an insurance policy or related document?
+                        
+                        TEXT:
+                        {sample_text}
+                        
+                        Return JSON:
+                        {{
+                            "is_policy": boolean,
+                            "reason": "concise explanation"
+                        }}
+                        """
+                    }
+                ],
+                temperature=0.1
+            )
+            
+            result = response.choices[0].message.content
+            return SafeLLMParser.parse_json(result, default={'is_policy': False, 'reason': "Analysis failed"})
+            
+        except Exception as e:
+            return {'is_policy': False, 'reason': f"Error: {str(e)}"}
+
     def _build_analysis_prompt(self, policy_text: str) -> str:
         """Build prompt for policy analysis"""
         # Truncate if too long
@@ -64,12 +121,13 @@ Analyze this insurance policy document and extract key information:
 POLICY DOCUMENT:
 {policy_text}
 
-Please provide a structured analysis:
-
-COVERAGE RULES:
-- [Rule 1: What is covered and conditions]
-- [Rule 2: Coverage limits and amounts]
-- [Rule 3: Eligibility requirements]
+Please provide a structured analysis in JSON format with the following keys:
+- coverage_rules (list of strings)
+- exclusions (list of strings)
+- loopholes (list of strings)
+- claim_requirements (list of strings)
+- contacts (dictionary of contact info)
+- important_dates (dictionary of dates)
 
 EXCLUSIONS & LIMITATIONS:
 - [Exclusion 1: What is NOT covered]
@@ -95,43 +153,5 @@ IMPORTANT DATES:
 - Renewal: [Date]
 """
     
-    def _parse_analysis(self, text: str) -> dict:
-        """Parse LLM analysis response"""
-        analysis = {
-            'coverage_rules': [],
-            'exclusions': [],
-            'loopholes': [],
-            'claim_requirements': [],
-            'contacts': {},
-            'important_dates': {}
-        }
-        
-        current_section = None
-        
-        for line in text.split('\n'):
-            line = line.strip()
-            
-            if 'COVERAGE RULES:' in line.upper():
-                current_section = 'coverage_rules'
-            elif 'EXCLUSIONS' in line.upper() or 'LIMITATIONS:' in line.upper():
-                current_section = 'exclusions'
-            elif 'LOOPHOLES' in line.upper() or 'AMBIGUITIES:' in line.upper():
-                current_section = 'loopholes'
-            elif 'CLAIM REQUIREMENTS:' in line.upper():
-                current_section = 'claim_requirements'
-            elif 'KEY CONTACTS:' in line.upper():
-                current_section = 'contacts'
-            elif 'IMPORTANT DATES:' in line.upper():
-                current_section = 'dates'
-            elif line.startswith('-') or line.startswith('•'):
-                item = line.lstrip('-•').strip()
-                if current_section in ['coverage_rules', 'exclusions', 'loopholes', 'claim_requirements']:
-                    analysis[current_section].append(item)
-                elif current_section == 'contacts' and ':' in item:
-                    key, value = item.split(':', 1)
-                    analysis['contacts'][key.strip()] = value.strip()
-                elif current_section == 'dates' and ':' in item:
-                    key, value = item.split(':', 1)
-                    analysis['important_dates'][key.strip()] = value.strip()
-        
-        return analysis
+    # Logic moved to SafeLLMParser.parse_json, manual _parse_analysis removed
+

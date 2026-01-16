@@ -1,57 +1,22 @@
 {
-    "code_review_config": {
-        "version": "1.0",
-        "language": "Generic",
-        "description": "Generic code review configuration for all other languages",
-        "general_checks": {
-            "check_code_quality": true,
-            "check_security": true,
-            "check_performance": true,
-            "check_best_practices": true,
-            "check_documentation": true
-        },
-        "severity_levels": {
-            "enabled": [
-                "high",
-                "medium",
-                "low"
-            ],
-            "fail_on": [
-                "high"
-            ]
-        },
-        "code_quality": {
-            "max_function_length": 50,
-            "max_line_length": 120,
-            "max_complexity": 10,
-            "check_naming_conventions": true,
-            "check_code_duplication": true
-        },
-        "security_checks": {
-            "check_hardcoded_secrets": true,
-            "check_input_validation": true,
-            "check_authentication_issues": true,
-            "check_data_exposure": true
-        },
-        "performance_checks": {
-            "check_inefficient_loops": true,
-            "check_memory_leaks": true,
-            "check_unnecessary_computations": true
-        },
-        "best_practices": {
-            "follow_language_conventions": true,
-            "use_appropriate_data_structures": true,
-            "handle_errors_properly": true,
-            "write_readable_code": true
-        },
-        "test_generation": {
-            "generate_unit_tests": true,
-            "test_edge_cases": true
-        },
-        "failure_scenarios": {
-            "test_null_values": true,
-            "test_boundary_conditions": true,
-            "test_invalid_inputs": true
-        }
-    }
+    "language": "generic",
+    "description": "Generic Code Review Configuration for all languages",
+    "rules": {
+        "max_line_length": 120,
+        "naming_convention": "Standard (camelCase or snake_case)",
+        "comment_style": "Standard for language"
+    },
+    "severity_levels": {
+        "critical": "Blocks deployment",
+        "high": "Must fix",
+        "medium": "Should fix",
+        "low": "Nice to have"
+    },
+    "analysis_focus": [
+        "Code Quality",
+        "Performance",
+        "Security",
+        "Readability",
+        "Best Practices"
+    ]
 }

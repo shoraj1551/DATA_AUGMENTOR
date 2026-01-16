@@ -1,7 +1,9 @@
 ﻿from llm.client import get_client
 from utils.cache import llm_cache
-from config.settings import get_model_for_feature
+from config.settings import get_model_for_feature, get_model_for_language
+from utils.safe_llm_parser import SafeLLMParser
 import difflib
+import json
 
 
 def calculate_code_similarity(code1: str, code2: str) -> float:
@@ -18,12 +20,34 @@ def calculate_code_similarity(code1: str, code2: str) -> float:
     return similarity
 
 
+# Helper for dynamic model selection
+def get_best_model(language: str) -> str:
+    """
+    Select the best free model based on language complexity.
+    - Python/SQL/R: Meta-Llama 3.1 8B (Great for standard tasks)
+    - C++/Java/Rust/Go/JS: Qwen 2.5 7B (Better at complex syntax/logic)
+    """
+    complex_languages = ['cpp', 'c++', 'c', 'java', 'rust', 'go', 'typescript', 'javascript', 'js', 'ts', 'scala', 'kotlin', 'swift']
+    
+    # Check regular config first
+    default_model = get_model_for_feature("code_review")
+    
+    # If language requires stronger reasoning/syntax capabilities, try to use Qwen if available as alternative
+    if language.lower() in complex_languages:
+        # Hardcoded check for free tier known models or check specific config
+        # Ideally this comes from config, but for now we enforce logic as requested
+        return "qwen/qwen-2.5-7b-instruct"
+        
+    return default_model
+
 
 @llm_cache.cached
-def review_code_with_llm(code: str, language: str, filename: str) -> dict:
+def review_code_with_llm(code: str, language: str, filename: str) -> str:
     """
-    Use LLM to review code for issues, best practices, and security concerns.
+    Use LLM to review code and return a detailed markdown report.
     """
+    model = get_model_for_language(language)
+    
     system_prompt = f"""You are an expert code reviewer for {language}.
 
 Analyze the code for:
@@ -33,18 +57,13 @@ Analyze the code for:
 - Best practice violations
 - Potential bugs
 
-Return JSON with this structure:
-{{
-  "issues": [
-    {{
-      "line": <line_number>,
-      "severity": "high|medium|low",
-      "type": "security|performance|quality|bug",
-      "message": "Description of the issue",
-      "suggestion": "How to fix it"
-    }}
-  ]
-}}"""
+OUTPUT FORMAT:
+Return a clear, well-structured MARKDOWN report.
+- Use headers for categories (Security, Performance, etc.)
+- Use bullet points for specific issues
+- Cite specific line numbers if possible
+- Be concise but professional
+- Do NOT output JSON"""
 
     user_prompt = f"""Review this {language} code from '{filename}':
 
@@ -52,15 +71,14 @@ Return JSON with this structure:
 {code[:5000]}  # Limit to first 5000 chars
 ```
 
-Return ONLY valid JSON with code review findings."""
+Return a comprehensive markdown review report."""
 
     response = get_client().chat.completions.create(
-        model=get_model_for_feature("code_review"),
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
-        ],
-        response_format={"type": "json_object"}
+        ]
     )
     
     return response.choices[0].message.content
@@ -71,6 +89,8 @@ def generate_unit_tests_with_llm(code: str, language: str, test_framework: str) 
     """
     Generate unit tests for the code.
     """
+    model = get_model_for_language(language)
+    
     system_prompt = f"""You are an expert test engineer for {language}.
 
 Generate comprehensive UNIT tests using {test_framework}.
@@ -106,7 +126,7 @@ Return both parts."""
 Remember: Unit tests = ISOLATED testing with MOCKED dependencies."""
 
     response = get_client().chat.completions.create(
-        model=get_model_for_feature("code_review"),
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
@@ -121,18 +141,20 @@ def generate_functional_tests_with_llm(code: str, language: str, test_framework:
     """
     Generate functional/integration tests.
     """
+    model = get_model_for_language(language)
+    
     system_prompt = f"""You are an expert test engineer for {language}.
 
 FIRST: Analyze if this code has meaningful integration points or workflows.
 
 If the code is a simple pure function with NO external dependencies, NO database calls, NO API calls, and NO multi-component workflows:
-ΓåÆ Return EXACTLY: "SAME AS UNIT TEST"
+→ Return EXACTLY: "SAME AS UNIT TEST"
 
 Otherwise, generate FUNCTIONAL/INTEGRATION tests using {test_framework}.
 
 CRITICAL REQUIREMENTS for Functional Tests:
 1. NO MOCKING: Test the REAL integration between components
-2. Test complete WORKFLOWS (e.g., user input ΓåÆ processing ΓåÆ database ΓåÆ output)
+2. Test complete WORKFLOWS (e.g., user input → processing → database → output)
 3. Test how multiple functions/classes work TOGETHER
 4. Test actual database queries, API calls, file operations (if present)
 5. Test end-to-end scenarios with realistic data
@@ -162,7 +184,7 @@ Return both parts OR "SAME AS UNIT TEST"."""
 Remember: Functional tests = REAL workflows, NO mocking, test INTEGRATION."""
 
     response = get_client().chat.completions.create(
-        model=get_model_for_feature("code_review"),
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
@@ -177,6 +199,8 @@ def generate_failure_scenarios_with_llm(code: str, language: str) -> str:
     """
     Generate failure scenarios and edge case inputs.
     """
+    model = get_model_for_language(language)
+    
     system_prompt = f"""You are a security and QA expert for {language}.
 
 Generate ALL potential failure scenarios that could break this code. Be exhaustive.
@@ -219,7 +243,7 @@ IMPORTANT:
 Return ONLY valid JSON with the exact structure specified."""
 
     response = get_client().chat.completions.create(
-        model=get_model_for_feature("code_review"),
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
@@ -227,7 +251,14 @@ Return ONLY valid JSON with the exact structure specified."""
         response_format={"type": "json_object"}
     )
     
-    return response.choices[0].message.content
+    content = response.choices[0].message.content
+    
+    # Use SafeLLMParser to parse JSON
+    # This handles markdown stripping, regex finding, etc.
+    failures = SafeLLMParser.parse_json(content, default={"scenarios": []})
+    
+    # Return as JSON string for consistency with cache and downstream usage
+    return json.dumps(failures)
 
 
 # ============================================
@@ -240,14 +271,14 @@ def add_comments_and_documentation(code: str, language: str) -> str:
     Add inline comments and documentation to code WITHOUT changing code format or logic.
     Uses free LLM from config.
     """
+    model = get_model_for_language(language)
+    
     system_prompt = f"""You are an expert {language} developer and technical writer.
 
-≡ƒÜ¿≡ƒÜ¿≡ƒÜ¿ ABSOLUTE CRITICAL RULES - NEVER VIOLATE ≡ƒÜ¿≡ƒÜ¿≡ƒÜ¿
+🚨🚨🚨 ABSOLUTE CRITICAL RULES - NEVER VIOLATE 🚨🚨🚨
 
 1. KEEP THE EXACT SAME FORMAT
-   - If input is Python ΓåÆ output MUST be Python
-   - If input is SQL ΓåÆ output MUST be SQL
-   - If input is JavaScript ΓåÆ output MUST be JavaScript
+   - Input language MUST match Output language (e.g., Python → Python, Java → Java)
    - NEVER convert to JSON or any other format
 
 2. ONLY ADD COMMENTS - NOTHING ELSE
@@ -256,21 +287,37 @@ def add_comments_and_documentation(code: str, language: str) -> str:
    - Do NOT change logic
    - Do NOT change imports
    - Do NOT change structure
-   - ONLY add comment lines and docstrings
+   - ONLY add comment lines and docstrings using the correct syntax for {language}
 
-3. EXAMPLE OF CORRECT OUTPUT:
+3. EXAMPLES OF CORRECT OUTPUT:
 
-INPUT (Python):
+Example 1 (Python):
+INPUT:
 def calculate(x, y):
     result = x + y
     return result
 
-CORRECT OUTPUT (Python with comments):
+OUTPUT:
 def calculate(x, y):
     \"\"\"Calculate sum of two numbers.\"\"\"
     # Add the two input values
     result = x + y
     return result
+
+Example 2 (C++/Java/JavaScript):
+INPUT:
+int calculate(int x, int y) {{
+    return x + y;
+}}
+
+OUTPUT:
+/**
+ * Calculate sum of two numbers.
+ */
+int calculate(int x, int y) {{
+    // Add the two input values
+    return x + y;
+}}
 
 WRONG OUTPUT (DO NOT DO THIS):
 {{
@@ -279,7 +326,7 @@ WRONG OUTPUT (DO NOT DO THIS):
 }}
 
 4. WHAT TO ADD:
-   - Docstrings for functions/classes
+   - Docstrings for functions/classes (use correct {language} syntax)
    - Inline comments explaining WHY (not what)
    - Parameter descriptions
    - Return value descriptions
@@ -297,14 +344,14 @@ INPUT CODE:
 
 INSTRUCTIONS:
 - Keep the EXACT SAME format ({language})
-- ONLY add comment lines
+- ONLY add comment lines (use correct syntax for {language})
 - Do NOT convert to JSON or any other format
 - Return {language} code with comments added
 
 OUTPUT (must be {language} code):"""
 
     response = get_client().chat.completions.create(
-        model=get_model_for_feature("code_review"),
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
@@ -312,32 +359,26 @@ OUTPUT (must be {language} code):"""
     )
     
     # Clean up response - remove markdown code blocks if present
-    result = response.choices[0].message.content
-    
-    # Remove markdown code blocks
-    if result.startswith("```"):
-        lines = result.split('\n')
-        # Remove first line (```language) and last line (```)
-        if lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].strip() == "```":
-            lines = lines[:-1]
-        result = '\n'.join(lines)
-    
-    return result
+    return SafeLLMParser.strip_markdown(response.choices[0].message.content)
 
 
 @llm_cache.cached
-def fix_all_issues(code: str, language: str, issues: list, failure_scenarios: list) -> str:
+def fix_all_issues(code: str, language: str, issues: object, failure_scenarios: list) -> dict:
     """
-    Auto-fix all identified issues and handle failure scenarios.
-    Uses free LLM from config.
+    Auto-fix all identified issues AND provide a structured log of changes.
+    Returns JSON dict: { "fixed_code": str, "changes": list[dict] }
     """
+    model = get_model_for_language(language)
+    
     # Format issues and failures for the prompt
-    issues_text = "\n".join([
-        f"- Line {issue.get('line', 'N/A')}: {issue.get('message', '')} (Severity: {issue.get('severity', 'unknown')})"
-        for issue in issues
-    ])
+    if isinstance(issues, list):
+        issues_text = "\n".join([
+            f"- Line {issue.get('line', 'N/A')}: {issue.get('message', '')} (Severity: {issue.get('severity', 'unknown')})"
+            for issue in issues
+        ])
+    else:
+        # If issues is a string (markdown report), use it directly
+        issues_text = str(issues)
     
     failures_text = "\n".join([
         f"- {scenario.get('function', 'General')}: {scenario.get('reason', '')} (Input: {scenario.get('input', 'N/A')})"
@@ -351,21 +392,32 @@ Fix ALL identified issues and add error handling for ALL failure scenarios.
 REQUIREMENTS:
 1. Fix every issue mentioned in the code review
 2. Add proper error handling for all failure scenarios
-3. Add input validation to prevent failures
+3. Add input validation
 4. Add try-catch blocks where appropriate
-5. Add defensive programming checks (null checks, type checks, boundary checks)
-6. Maintain the original functionality
-7. Follow {language} best practices
+5. Maintain original functionality
+6. Follow {language} best practices
+
+RESPONSE FORMAT:
+Return a VALID JSON object with TWO fields:
+1. "fixed_code": The complete, compilable fixed code string.
+2. "changes": A list of objects explaining what changed.
+
+JSON STRUCTURE:
+{{
+  "fixed_code": "...",
+  "changes": [
+    {{
+      "issue_summary": "Short summary of the issue fixed",
+      "fix_explanation": "Detailed explanation of what code was changed",
+      "line_number": <approx_line_number_in_new_code>
+    }}
+  ]
+}}
 
 CRITICAL:
-- Fix ALL issues, don't skip any
-- Handle ALL failure scenarios
-- Add comprehensive error handling
-- Keep the code readable and maintainable
-
-OUTPUT FORMAT:
-Return ONLY the complete fixed code.
-Do NOT include explanations or markdown - just the code."""
+- Return ONLY valid JSON
+- Escape newlines and quotes in the "fixed_code" string properly
+- The "fixed_code" must be the WHOLE file, not just snippets"""
 
     user_prompt = f"""Fix this {language} code by addressing ALL issues and failure scenarios:
 
@@ -380,14 +432,21 @@ Do NOT include explanations or markdown - just the code."""
 **FAILURE SCENARIOS TO HANDLE:**
 {failures_text if failures_text else "No failure scenarios identified"}
 
-Return the complete fixed code with all issues resolved and all failure scenarios handled."""
+Return the structured JSON with fixed code and change log."""
 
     response = get_client().chat.completions.create(
-        model=get_model_for_feature("code_review"),
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
-        ]
+        ],
+        response_format={"type": "json_object"}
     )
     
-    return response.choices[0].message.content
+    content = response.choices[0].message.content
+    
+    # Use SafeLLMParser to parse JSON response
+    return SafeLLMParser.parse_json(content, default={
+        "fixed_code": content if not content.strip().startswith('{') else "",
+        "changes": [{"issue_summary": "Parsing Error", "fix_explanation": "LLM returned raw text. Code may be fixed but details are missing.", "line_number": 0}]
+    })
